@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'product_screen.dart';
+import 'supplier/supplier_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -56,7 +57,7 @@ class HomeScreen extends StatelessWidget {
               "Suppliers",
               Icons.local_shipping,
               Colors.red,
-              Container(),
+              SupplierListScreen(),
             ),
 
             buildMenu(
