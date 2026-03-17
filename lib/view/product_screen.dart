@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 
 class ProductScreen extends StatelessWidget {
+  ProductScreen({super.key});
   final List<Product> products = [
     Product(id: "1", name: "Milk", price: 2.5, quantity: 50),
     Product(id: "2", name: "Bread", price: 1.2, quantity: 30),
