@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'product_screen.dart';
+import 'user_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -25,6 +26,14 @@ class HomeScreen extends StatelessWidget {
               Icons.shopping_cart,
               Colors.orange,
               ProductScreen(),
+            ),
+
+            buildMenu(
+              context,
+              "Users",
+              Icons.person,
+              Colors.teal,
+              const UserListScreen(),
             ),
 
             buildMenu(
