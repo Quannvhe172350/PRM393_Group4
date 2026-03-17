@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
               "Products",
               Icons.shopping_cart,
               Colors.orange,
-              const ProductScreen(),
+              ProductScreen(),
             ),
 
             buildMenu(

@@ -43,4 +43,22 @@ class Order {
           : DateTime.now(),
     );
   }
+
+  Order copyWith({
+    String? id,
+    String? customerName,
+    List<OrderItem>? items,
+    double? totalAmount,
+    String? status,
+    DateTime? orderDate,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      customerName: customerName ?? this.customerName,
+      items: items ?? this.items,
+      totalAmount: totalAmount ?? this.totalAmount,
+      status: status ?? this.status,
+      orderDate: orderDate ?? this.orderDate,
+    );
+  }
 }
