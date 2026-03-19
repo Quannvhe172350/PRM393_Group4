@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'product_screen.dart';
 import 'user_list_screen.dart';
+import 'supplier/supplier_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -65,7 +66,7 @@ class HomeScreen extends StatelessWidget {
               "Suppliers",
               Icons.local_shipping,
               Colors.red,
-              Container(),
+              const SupplierListScreen(),
             ),
 
             buildMenu(
@@ -73,7 +74,7 @@ class HomeScreen extends StatelessWidget {
               "Logout",
               Icons.logout,
               Colors.grey,
-              Container(),
+              null,
             ),
           ],
         ),
@@ -86,15 +87,32 @@ class HomeScreen extends StatelessWidget {
     String title,
     IconData icon,
     Color color,
-    Widget page,
+    Widget? page,
   ) {
     return GestureDetector(
       onTap: () {
-        if (page is! Container) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => page),
+        if (page == null) {
+          // Logout
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Đăng xuất'),
+              content: const Text('Bạn có chắc muốn đăng xuất không?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.pushReplacementNamed(context, '/');
+                  },
+                  child: const Text('Đăng xuất'),
+                ),
+              ],
+            ),
           );
+        } else {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => page));
         }
       },
 

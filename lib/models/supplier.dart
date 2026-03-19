@@ -17,18 +17,18 @@ class Supplier {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      if (id.isNotEmpty && id != '0') 'id': int.tryParse(id),
       'name': name,
-      'contactPerson': contactPerson,
       'phone': phone,
       'email': email,
       'address': address,
+      'created_at': DateTime.now().toIso8601String(),
     };
   }
 
   factory Supplier.fromMap(Map<String, dynamic> map) {
     return Supplier(
-      id: map['id'] ?? '',
+      id: (map['id'] ?? '').toString(),
       name: map['name'] ?? '',
       contactPerson: map['contactPerson'] ?? '',
       phone: map['phone'] ?? '',
