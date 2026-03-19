@@ -1,16 +1,81 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 
+//quan thêm barcode
 class ProductProvider extends ChangeNotifier {
   final List<Product> _products = [
-    Product(id: '1', name: 'Sữa tươi Vinamilk', price: 32000, quantity: 50, category: 'Đồ uống', description: 'Sữa tươi tiệt trùng 1L'),
-    Product(id: '2', name: 'Bánh mì sandwich', price: 25000, quantity: 30, category: 'Bánh', description: 'Bánh mì sandwich nguyên cám'),
-    Product(id: '3', name: 'Táo Fuji', price: 65000, quantity: 40, category: 'Trái cây', description: 'Táo Fuji nhập khẩu Nhật Bản'),
-    Product(id: '4', name: 'Cam sành', price: 35000, quantity: 35, category: 'Trái cây', description: 'Cam sành Việt Nam'),
-    Product(id: '5', name: 'Trứng gà', price: 42000, quantity: 60, category: 'Thực phẩm', description: 'Trứng gà ta (hộp 10 quả)'),
-    Product(id: '6', name: 'Nước mắm Nam Ngư', price: 28000, quantity: 45, category: 'Gia vị', description: 'Nước mắm Nam Ngư 500ml'),
-    Product(id: '7', name: 'Gạo ST25', price: 120000, quantity: 20, category: 'Thực phẩm', description: 'Gạo ST25 túi 5kg'),
-    Product(id: '8', name: 'Coca Cola', price: 12000, quantity: 100, category: 'Đồ uống', description: 'Coca Cola lon 330ml'),
+    Product(
+      id: '1',
+      barcode: '12345678',
+      name: 'Sữa tươi Vinamilk',
+      price: 32000,
+      quantity: 50,
+      category: 'Đồ uống',
+      description: 'Sữa tươi tiệt trùng 1L',
+    ),
+    Product(
+      id: '2',
+      barcode: '982653777',
+      name: 'Bánh mì sandwich',
+      price: 25000,
+      quantity: 30,
+      category: 'Bánh',
+      description: 'Bánh mì sandwich nguyên cám',
+    ),
+    Product(
+      id: '3',
+      barcode: '986526374',
+      name: 'Táo Fuji',
+      price: 65000,
+      quantity: 40,
+      category: 'Trái cây',
+      description: 'Táo Fuji nhập khẩu Nhật Bản',
+    ),
+    Product(
+      id: '4',
+      barcode: '427846544',
+      name: 'Cam sành',
+      price: 35000,
+      quantity: 35,
+      category: 'Trái cây',
+      description: 'Cam sành Việt Nam',
+    ),
+    Product(
+      id: '5',
+      barcode: '543547388',
+      name: 'Trứng gà',
+      price: 42000,
+      quantity: 60,
+      category: 'Thực phẩm',
+      description: 'Trứng gà ta (hộp 10 quả)',
+    ),
+    Product(
+      id: '6',
+      barcode: '3747766355',
+      name: 'Nước mắm Nam Ngư',
+      price: 28000,
+      quantity: 45,
+      category: 'Gia vị',
+      description: 'Nước mắm Nam Ngư 500ml',
+    ),
+    Product(
+      id: '7',
+      barcode: '7455289403',
+      name: 'Gạo ST25',
+      price: 120000,
+      quantity: 20,
+      category: 'Thực phẩm',
+      description: 'Gạo ST25 túi 5kg',
+    ),
+    Product(
+      id: '8',
+      barcode: '6399475267',
+      name: 'Coca Cola',
+      price: 12000,
+      quantity: 100,
+      category: 'Đồ uống',
+      description: 'Coca Cola lon 330ml',
+    ),
   ];
 
   List<Product> get products => List.unmodifiable(_products);

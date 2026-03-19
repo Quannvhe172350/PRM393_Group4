@@ -19,6 +19,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
   late TextEditingController _descriptionController;
+  late TextEditingController _barcodeController;
   String _selectedCategory = '';
 
   bool get isEditing => widget.product != null;
@@ -27,10 +28,19 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.product?.name ?? '');
-    _priceController = TextEditingController(text: widget.product?.price.toString() ?? '');
-    _quantityController = TextEditingController(text: widget.product?.quantity.toString() ?? '');
-    _descriptionController = TextEditingController(text: widget.product?.description ?? '');
+    _priceController = TextEditingController(
+      text: widget.product?.price.toString() ?? '',
+    );
+    _quantityController = TextEditingController(
+      text: widget.product?.quantity.toString() ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.product?.description ?? '',
+    );
     _selectedCategory = widget.product?.category ?? '';
+    _barcodeController = TextEditingController(
+      text: widget.product?.barcode ?? '',
+    );
   }
 
   @override
@@ -68,7 +78,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     color: Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(Icons.shopping_bag, size: 40, color: Colors.orange),
+                  child: const Icon(
+                    Icons.shopping_bag,
+                    size: 40,
+                    color: Colors.orange,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -79,7 +93,31 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               TextFormField(
                 controller: _nameController,
                 decoration: _inputDecoration('Nhập tên sản phẩm'),
-                validator: (value) => value == null || value.isEmpty ? 'Vui lòng nhập tên' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Vui lòng nhập tên' : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Barcode
+              _buildLabel('Mã vạch (Barcode) *'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller:
+                    _barcodeController, // Đảm bảo bạn đã khai báo controller này ở initState
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration('Nhập mã vạch hoặc quét mã')
+                    .copyWith(
+                      prefixIcon: const Icon(
+                        Icons.qr_code_scanner,
+                        color: Colors.orange,
+                      ),
+                    ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng nhập hoặc quét mã vạch';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -97,8 +135,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           keyboardType: TextInputType.number,
                           decoration: _inputDecoration('0'),
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Nhập giá';
-                            if (double.tryParse(value) == null) return 'Giá không hợp lệ';
+                            if (value == null || value.isEmpty)
+                              return 'Nhập giá';
+                            if (double.tryParse(value) == null)
+                              return 'Giá không hợp lệ';
                             return null;
                           },
                         ),
@@ -117,8 +157,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           keyboardType: TextInputType.number,
                           decoration: _inputDecoration('0'),
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Nhập SL';
-                            if (int.tryParse(value) == null) return 'SL không hợp lệ';
+                            if (value == null || value.isEmpty)
+                              return 'Nhập SL';
+                            if (int.tryParse(value) == null)
+                              return 'SL không hợp lệ';
                             return null;
                           },
                         ),
@@ -133,15 +175,21 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               _buildLabel('Danh mục'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                initialValue: _selectedCategory.isEmpty ? null : _selectedCategory,
+                initialValue: _selectedCategory.isEmpty
+                    ? null
+                    : _selectedCategory,
                 decoration: _inputDecoration('Chọn danh mục'),
                 items: [
                   const DropdownMenuItem(value: '', child: Text('Không chọn')),
-                  ...categoryProvider.categories.map((cat) =>
-                    DropdownMenuItem(value: cat.name, child: Text(cat.name)),
+                  ...categoryProvider.categories.map(
+                    (cat) => DropdownMenuItem(
+                      value: cat.name,
+                      child: Text(cat.name),
+                    ),
                   ),
                 ],
-                onChanged: (value) => setState(() => _selectedCategory = value ?? ''),
+                onChanged: (value) =>
+                    setState(() => _selectedCategory = value ?? ''),
               ),
               const SizedBox(height: 16),
 
@@ -163,13 +211,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 2,
                   ),
                   onPressed: _saveProduct,
                   child: Text(
                     isEditing ? 'CẬP NHẬT' : 'THÊM SẢN PHẨM',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -181,7 +234,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Widget _buildLabel(String text) {
-    return Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87));
+    return Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+        color: Colors.black87,
+      ),
+    );
   }
 
   InputDecoration _inputDecoration(String hint) {
@@ -203,6 +263,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
     final product = Product(
       id: isEditing ? widget.product!.id : provider.generateId(),
+      barcode: _barcodeController.text.trim(),
       name: _nameController.text.trim(),
       price: double.parse(_priceController.text.trim()),
       quantity: int.parse(_quantityController.text.trim()),
@@ -213,12 +274,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     if (isEditing) {
       provider.updateProduct(product);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã cập nhật sản phẩm'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Đã cập nhật sản phẩm'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
       provider.addProduct(product);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã thêm sản phẩm mới'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Đã thêm sản phẩm mới'),
+          backgroundColor: Colors.green,
+        ),
       );
     }
 

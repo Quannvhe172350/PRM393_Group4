@@ -4,11 +4,41 @@ import '../models/product.dart';
 class ProductScreen extends StatelessWidget {
   ProductScreen({super.key});
   final List<Product> products = [
-    Product(id: "1", name: "Milk", price: 2.5, quantity: 50),
-    Product(id: "2", name: "Bread", price: 1.2, quantity: 30),
-    Product(id: "3", name: "Apple", price: 3.0, quantity: 40),
-    Product(id: "4", name: "Orange", price: 2.8, quantity: 35),
-    Product(id: "5", name: "Eggs", price: 4.0, quantity: 60),
+    Product(
+      id: "1",
+      barcode: '338836222',
+      name: "Milk",
+      price: 2.5,
+      quantity: 50,
+    ),
+    Product(
+      id: "2",
+      barcode: '093764533',
+      name: "Bread",
+      price: 1.2,
+      quantity: 30,
+    ),
+    Product(
+      id: "3",
+      barcode: '4538993555',
+      name: "Apple",
+      price: 3.0,
+      quantity: 40,
+    ),
+    Product(
+      id: "4",
+      barcode: '3365869684',
+      name: "Orange",
+      price: 2.8,
+      quantity: 35,
+    ),
+    Product(
+      id: "5",
+      barcode: '087553456',
+      name: "Eggs",
+      price: 4.0,
+      quantity: 60,
+    ),
   ];
 
   @override

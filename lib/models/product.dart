@@ -1,5 +1,6 @@
 class Product {
   String id;
+  String barcode;
   String name;
   double price;
   int quantity;
@@ -9,6 +10,7 @@ class Product {
 
   Product({
     required this.id,
+    required this.barcode,
     required this.name,
     required this.price,
     required this.quantity,
@@ -32,6 +34,7 @@ class Product {
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
       id: map['id'] ?? '',
+      barcode: map['barcode'] ?? '',
       name: map['name'] ?? '',
       price: (map['price'] ?? 0).toDouble(),
       quantity: (map['quantity'] ?? 0).toInt(),
