@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import '../../models/order.dart';
 import '../../providers/order_provider.dart';
+import '../../models/order.dart';
+import '../../db/app_database.dart';
 
 class OrderManagementScreen extends StatefulWidget {
   const OrderManagementScreen({super.key});
@@ -12,12 +12,22 @@ class OrderManagementScreen extends StatefulWidget {
 }
 
 class _OrderManagementScreenState extends State<OrderManagementScreen> {
-  String _filterStatus = 'all';
+  String _selectedStatus = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().loadOrders();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final orderProvider = Provider.of<OrderProvider>(context);
-    final orders = orderProvider.getByStatus(_filterStatus);
+    final orders = _selectedStatus == 'all'
+        ? orderProvider.orders
+        : orderProvider.getByStatus(_selectedStatus);
 
     return Scaffold(
       appBar: AppBar(
@@ -28,7 +38,7 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
       ),
       body: Column(
         children: [
-          // Filter bar
+          // Status filter chips
           Container(
             color: Colors.blue,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -36,63 +46,63 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('Tất cả', 'all', orderProvider.totalOrders),
+                  _buildFilterChip('Tất cả', 'all'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Chờ xử lý', 'pending', orderProvider.pendingOrders),
+                  _buildFilterChip('Chờ xử lý', 'pending'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Đang xử lý', 'processing', orderProvider.getByStatus('processing').length),
+                  _buildFilterChip('Đang xử lý', 'processing'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Hoàn thành', 'completed', orderProvider.completedOrders),
+                  _buildFilterChip('Hoàn thành', 'completed'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Đã hủy', 'cancelled', orderProvider.getByStatus('cancelled').length),
+                  _buildFilterChip('Đã hủy', 'cancelled'),
                 ],
               ),
             ),
           ),
 
+          // Order count
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('${orders.length} đơn hàng', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black54)),
+                Text('Doanh thu: ${_formatPrice(orderProvider.totalRevenue)}đ',
+                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+              ],
+            ),
+          ),
+
           // Order list
           Expanded(
-            child: orders.isEmpty
-                ? const Center(child: Text('Không có đơn hàng nào', style: TextStyle(color: Colors.grey)))
-                : ListView.builder(
-                    itemCount: orders.length,
-                    padding: const EdgeInsets.all(16),
-                    itemBuilder: (context, index) {
-                      final order = orders[index];
-                      return _buildOrderCard(context, order, orderProvider);
-                    },
-                  ),
+            child: orderProvider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : orders.isEmpty
+                    ? const Center(child: Text('Không có đơn hàng', style: TextStyle(color: Colors.grey)))
+                    : ListView.builder(
+                        itemCount: orders.length,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemBuilder: (context, index) => _buildOrderCard(context, orders[index], orderProvider),
+                      ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, String status, int count) {
-    final isSelected = _filterStatus == status;
-    return GestureDetector(
-      onTap: () => setState(() => _filterStatus = status),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          '$label ($count)',
-          style: TextStyle(
-            color: isSelected ? Colors.blue : Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
-        ),
-      ),
+  Widget _buildFilterChip(String label, String status) {
+    final isSelected = _selectedStatus == status;
+    return FilterChip(
+      label: Text(label, style: TextStyle(color: isSelected ? Colors.blue : Colors.white, fontSize: 12)),
+      selected: isSelected,
+      onSelected: (selected) => setState(() => _selectedStatus = status),
+      backgroundColor: Colors.white.withValues(alpha: 0.2),
+      selectedColor: Colors.white,
+      checkmarkColor: Colors.blue,
     );
   }
 
   Widget _buildOrderCard(BuildContext context, Order order, OrderProvider provider) {
-    final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -100,111 +110,70 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
-          backgroundColor: _getStatusColor(order.status).withOpacity(0.1),
+          backgroundColor: _getStatusColor(order.status).withValues(alpha: 0.1),
           child: Icon(Icons.receipt, color: _getStatusColor(order.status)),
         ),
-        title: Text('#${order.id} - ${order.customerName}',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(dateFormat.format(order.orderDate), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  _formatPrice(order.totalAmount),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(order.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    _getStatusText(order.status),
-                    style: TextStyle(
-                      color: _getStatusColor(order.status),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        title: Text(order.customerName ?? 'Khách #${order.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('${_formatPrice(order.totalAmount)}đ • ${_getStatusText(order.status)}',
+          style: TextStyle(color: _getStatusColor(order.status), fontSize: 12)),
         children: [
-          const Divider(height: 1),
-          // Order items
-          ...order.items.map((item) => ListTile(
-            dense: true,
-            leading: const Icon(Icons.shopping_bag_outlined, size: 20),
-            title: Text(item.productName, style: const TextStyle(fontSize: 13)),
-            subtitle: Text('${_formatPrice(item.price)} x ${item.quantity}', style: const TextStyle(fontSize: 12)),
-            trailing: Text(_formatPrice(item.total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          )),
-          const Divider(height: 1),
-          // Status update buttons
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                if (order.status == 'pending')
-                  _buildStatusButton('Xử lý', Colors.blue, () {
-                    provider.updateOrderStatus(order.id, 'processing');
-                  }),
-                if (order.status == 'processing')
-                  _buildStatusButton('Hoàn thành', Colors.green, () {
-                    provider.updateOrderStatus(order.id, 'completed');
-                  }),
-                if (order.status != 'completed' && order.status != 'cancelled')
-                  _buildStatusButton('Hủy', Colors.red, () {
-                    provider.updateOrderStatus(order.id, 'cancelled');
-                  }),
-                _buildStatusButton('Xóa', Colors.grey, () {
-                  _showDeleteDialog(context, order, provider);
-                }),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+          FutureBuilder<Order?>(
+            future: AppDatabase.instance.getOrderById(order.id!),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+              }
+              final detailedOrder = snapshot.data;
+              if (detailedOrder == null) return const SizedBox.shrink();
 
-  Widget _buildStatusButton(String label, Color color, VoidCallback onPressed) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      onPressed: onPressed,
-      child: Text(label, style: const TextStyle(fontSize: 12)),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, Order order, OrderProvider provider) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xóa đơn hàng'),
-        content: Text('Bạn có chắc muốn xóa đơn hàng #${order.id}?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-          TextButton(
-            onPressed: () {
-              provider.deleteOrder(order.id);
-              Navigator.pop(context);
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (detailedOrder.items.isNotEmpty) ...[
+                      const Text('Chi tiết:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      ...detailedOrder.items.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text('${item.productName ?? 'SP #${item.productId}'} x${item.quantity}', style: const TextStyle(fontSize: 13))),
+                            Text('${_formatPrice(item.subtotal)}đ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )),
+                      const Divider(),
+                    ],
+                    // Status actions
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (order.status == 'pending')
+                          TextButton.icon(
+                            onPressed: () => provider.updateStatus(order.id!, 'processing'),
+                            icon: const Icon(Icons.play_arrow, size: 18, color: Colors.blue),
+                            label: const Text('Xử lý', style: TextStyle(color: Colors.blue)),
+                          ),
+                        if (order.status == 'processing')
+                          TextButton.icon(
+                            onPressed: () => provider.updateStatus(order.id!, 'completed'),
+                            icon: const Icon(Icons.check, size: 18, color: Colors.green),
+                            label: const Text('Hoàn thành', style: TextStyle(color: Colors.green)),
+                          ),
+                        if (order.status != 'cancelled' && order.status != 'completed')
+                          TextButton.icon(
+                            onPressed: () => provider.updateStatus(order.id!, 'cancelled'),
+                            icon: const Icon(Icons.cancel, size: 18, color: Colors.red),
+                            label: const Text('Hủy', style: TextStyle(color: Colors.red)),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
             },
-            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -232,6 +201,9 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
   }
 
   String _formatPrice(double price) {
-    return '${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ';
+    return price.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
   }
 }

@@ -865,7 +865,7 @@ class AppDatabase {
     await db.transaction((txn) async {
       orderId = await txn.insert(tableOrders, order.toMap());
       for (final item in items) {
-        final itemMap = item.copyWith(orderId: orderId.toString()).toMap();
+        final itemMap = item.copyWith(orderId: orderId).toMap();
         await txn.insert(tableOrderItems, itemMap);
         await txn.rawUpdate('''
           UPDATE $tableProducts

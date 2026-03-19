@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/order_provider.dart';
-import '../../providers/employee_provider.dart';
+import '../../providers/staff_provider.dart';
 import '../../providers/supplier_provider.dart';
-
 import 'product_management_screen.dart';
 import 'category_management_screen.dart';
 import 'order_management_screen.dart';
@@ -13,15 +12,31 @@ import 'employee_management_screen.dart';
 import 'supplier_management_screen.dart';
 import 'reports_screen.dart';
 
-class ManagerDashboardScreen extends StatelessWidget {
+class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
+
+  @override
+  State<ManagerDashboardScreen> createState() => _ManagerDashboardScreenState();
+}
+
+class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Refresh all data when dashboard loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().loadProducts();
+      context.read<OrderProvider>().loadOrders();
+      context.read<StaffProvider>().loadStaff();
+      context.read<SupplierProvider>().loadSuppliers();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
     final orderProvider = Provider.of<OrderProvider>(context);
-    final employeeProvider = Provider.of<EmployeeProvider>(context);
-
+    final staffProvider = Provider.of<StaffProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -67,7 +82,7 @@ class ManagerDashboardScreen extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     'Quản lý siêu thị của bạn',
-                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
                   ),
                 ],
               ),
@@ -108,7 +123,7 @@ class ManagerDashboardScreen extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       'Nhân viên',
-                      '${employeeProvider.totalEmployees}',
+                      '${staffProvider.totalStaff}',
                       Icons.people,
                       Colors.purple,
                     ),
@@ -193,36 +208,41 @@ class ManagerDashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            ...orderProvider.orders.take(3).map((order) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: _getStatusColor(order.status).withOpacity(0.1),
-                    child: Icon(Icons.receipt, color: _getStatusColor(order.status)),
-                  ),
-                  title: Text(order.customerName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${_formatCurrency(order.totalAmount)} • ${order.items.length} sản phẩm'),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(order.status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+            if (orderProvider.isLoading)
+              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+            else if (orderProvider.orders.isEmpty)
+              const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('Chưa có đơn hàng', style: TextStyle(color: Colors.grey))))
+            else
+              ...orderProvider.orders.take(3).map((order) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: _getStatusColor(order.status).withValues(alpha: 0.1),
+                      child: Icon(Icons.receipt, color: _getStatusColor(order.status)),
                     ),
-                    child: Text(
-                      _getStatusText(order.status),
-                      style: TextStyle(
-                        color: _getStatusColor(order.status),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                    title: Text(order.customerName ?? 'Khách #${order.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('${_formatCurrency(order.totalAmount)}đ • ${order.items.length} sản phẩm'),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(order.status).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _getStatusText(order.status),
+                        style: TextStyle(
+                          color: _getStatusColor(order.status),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            )),
+              )),
 
             const SizedBox(height: 30),
           ],
@@ -239,7 +259,7 @@ class ManagerDashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -251,7 +271,7 @@ class ManagerDashboardScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -276,14 +296,14 @@ class ManagerDashboardScreen extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color, color.withOpacity(0.7)],
+            colors: [color, color.withValues(alpha: 0.7)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),

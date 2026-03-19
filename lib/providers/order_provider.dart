@@ -1,88 +1,57 @@
 import 'package:flutter/material.dart';
+import '../db/app_database.dart';
 import '../models/order.dart';
-import '../models/order_item.dart';
 
 class OrderProvider extends ChangeNotifier {
-  final List<Order> _orders = [
-    Order(
-      id: '1',
-      customerName: 'Nguyễn Văn A',
-      items: [
-        OrderItem(productId: '1', productName: 'Sữa tươi Vinamilk', quantity: 2, price: 32000),
-        OrderItem(productId: '8', productName: 'Coca Cola', quantity: 3, price: 12000),
-      ],
-      totalAmount: 100000,
-      status: 'completed',
-      orderDate: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    Order(
-      id: '2',
-      customerName: 'Trần Thị B',
-      items: [
-        OrderItem(productId: '3', productName: 'Táo Fuji', quantity: 1, price: 65000),
-        OrderItem(productId: '5', productName: 'Trứng gà', quantity: 2, price: 42000),
-      ],
-      totalAmount: 149000,
-      status: 'processing',
-      orderDate: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    Order(
-      id: '3',
-      customerName: 'Lê Văn C',
-      items: [
-        OrderItem(productId: '7', productName: 'Gạo ST25', quantity: 1, price: 120000),
-        OrderItem(productId: '6', productName: 'Nước mắm Nam Ngư', quantity: 2, price: 28000),
-      ],
-      totalAmount: 176000,
-      status: 'pending',
-      orderDate: DateTime.now(),
-    ),
-  ];
+  List<Order> _orders = [];
+  bool _isLoading = false;
 
-  List<Order> get orders => List.unmodifiable(_orders);
-
+  List<Order> get orders => _orders;
+  bool get isLoading => _isLoading;
   int get totalOrders => _orders.length;
 
   int get pendingOrders => _orders.where((o) => o.status == 'pending').length;
-
   int get completedOrders => _orders.where((o) => o.status == 'completed').length;
 
   double get totalRevenue => _orders
       .where((o) => o.status == 'completed')
-      .fold(0.0, (sum, order) => sum + order.totalAmount);
+      .fold(0.0, (sum, o) => sum + o.totalAmount);
 
-  Order? getById(String id) {
+  OrderProvider() {
+    loadOrders();
+  }
+
+  Future<void> loadOrders() async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      return _orders.firstWhere((o) => o.id == id);
-    } catch (_) {
-      return null;
+      _orders = await AppDatabase.instance.getOrders();
+    } catch (e) {
+      debugPrint('Error loading orders: $e');
     }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<Order?> getOrderDetail(int id) async {
+    return await AppDatabase.instance.getOrderById(id);
   }
 
   List<Order> getByStatus(String status) {
-    if (status.isEmpty || status == 'all') return _orders;
     return _orders.where((o) => o.status == status).toList();
   }
 
-  void addOrder(Order order) {
-    _orders.add(order);
-    notifyListeners();
-  }
-
-  void updateOrderStatus(String id, String newStatus) {
-    final order = getById(id);
-    if (order != null) {
-      order.status = newStatus;
-      notifyListeners();
+  Future<void> updateStatus(int orderId, String status) async {
+    if (status == 'cancelled') {
+      await AppDatabase.instance.cancelOrder(orderId);
+    } else {
+      await AppDatabase.instance.updateOrderStatus(orderId, status);
     }
+    await loadOrders();
   }
 
-  void deleteOrder(String id) {
-    _orders.removeWhere((o) => o.id == id);
-    notifyListeners();
-  }
-
-  String generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+  Future<void> deleteOrder(int id) async {
+    await AppDatabase.instance.deleteOrder(id);
+    await loadOrders();
   }
 }

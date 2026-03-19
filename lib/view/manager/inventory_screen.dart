@@ -2,69 +2,77 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/product_provider.dart';
 
-class InventoryScreen extends StatelessWidget {
+class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
+
+  @override
+  State<InventoryScreen> createState() => _InventoryScreenState();
+}
+
+class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().loadProducts();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
-    final products = productProvider.products;
+    final allProducts = productProvider.products;
     final lowStock = productProvider.getLowStockProducts(threshold: 15);
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Quản lý Tồn kho'),
-          backgroundColor: Colors.teal,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          bottom: const TabBar(
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
-            tabs: [
-              Tab(text: 'Tất cả', icon: Icon(Icons.inventory_2)),
-              Tab(text: 'Sắp hết', icon: Icon(Icons.warning_amber)),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            // All products inventory
-            _buildInventoryList(context, products, productProvider),
-            // Low stock products
-            lowStock.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle, size: 64, color: Colors.green),
-                        SizedBox(height: 12),
-                        Text('Tất cả sản phẩm đều đủ hàng!',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  )
-                : _buildInventoryList(context, lowStock, productProvider),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quản lý Tồn kho'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: [
+            Tab(text: 'Tất cả (${allProducts.length})'),
+            Tab(text: 'Sắp hết (${lowStock.length})'),
           ],
         ),
       ),
+      body: productProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildProductList(allProducts, productProvider),
+                _buildProductList(lowStock, productProvider),
+              ],
+            ),
     );
   }
 
-  Widget _buildInventoryList(BuildContext context, List products, ProductProvider provider) {
+  Widget _buildProductList(List products, ProductProvider provider) {
+    if (products.isEmpty) {
+      return const Center(child: Text('Không có sản phẩm', style: TextStyle(color: Colors.grey)));
+    }
+
     return ListView.builder(
       itemCount: products.length,
       padding: const EdgeInsets.all(16),
       itemBuilder: (context, index) {
         final product = products[index];
-        final stockLevel = product.quantity < 10
-            ? 'critical'
-            : product.quantity < 20
-                ? 'low'
-                : 'normal';
+        final stockLevel = product.quantity < 10 ? 'critical' : (product.quantity < 20 ? 'low' : 'ok');
 
         return Card(
           margin: const EdgeInsets.only(bottom: 10),
@@ -76,15 +84,13 @@ class InventoryScreen extends StatelessWidget {
               children: [
                 // Stock indicator
                 Container(
-                  width: 8,
-                  height: 60,
+                  width: 4,
+                  height: 50,
                   decoration: BoxDecoration(
-                    color: stockLevel == 'critical'
-                        ? Colors.red
-                        : stockLevel == 'low'
-                            ? Colors.orange
-                            : Colors.green,
-                    borderRadius: BorderRadius.circular(4),
+                    color: stockLevel == 'critical' ? Colors.red
+                        : stockLevel == 'low' ? Colors.orange
+                        : Colors.green,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -94,64 +100,50 @@ class InventoryScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (product.category.isNotEmpty) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(product.category, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Text(
-                            '${_formatPrice(product.price)}đ',
-                            style: const TextStyle(color: Colors.teal, fontSize: 13),
-                          ),
-                        ],
+                      Text(
+                        'Tồn kho: ${product.quantity}',
+                        style: TextStyle(
+                          color: product.quantity < 10 ? Colors.red : Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
+                      if (product.category.isNotEmpty)
+                        Text(product.category, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
                     ],
                   ),
                 ),
 
-                // Quantity with update buttons
-                Column(
+                // Quick stock update buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Kho: ${product.quantity}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: stockLevel == 'critical'
-                            ? Colors.red
-                            : stockLevel == 'low'
-                                ? Colors.orange
-                                : Colors.teal,
+                    IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.remove, color: Colors.red, size: 18),
                       ),
+                      onPressed: product.quantity > 0
+                          ? () => provider.updateStock(product.id!, product.quantity - 1)
+                          : null,
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildStockButton(Icons.remove, Colors.red, () {
-                          if (product.quantity > 0) {
-                            provider.updateStock(product.id, product.quantity - 1);
-                          }
-                        }),
-                        const SizedBox(width: 4),
-                        _buildStockButton(Icons.add, Colors.green, () {
-                          provider.updateStock(product.id, product.quantity + 1);
-                        }),
-                        const SizedBox(width: 4),
-                        _buildStockButton(Icons.edit, Colors.teal, () {
-                          _showUpdateStockDialog(context, product, provider);
-                        }),
-                      ],
+                    Text('${product.quantity}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.add, color: Colors.green, size: 18),
+                      ),
+                      onPressed: () => provider.updateStock(product.id!, product.quantity + 1),
                     ),
                   ],
                 ),
@@ -160,65 +152,6 @@ class InventoryScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildStockButton(IconData icon, Color color, VoidCallback onPressed) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, size: 16, color: color),
-      ),
-    );
-  }
-
-  void _showUpdateStockDialog(BuildContext context, dynamic product, ProductProvider provider) {
-    final controller = TextEditingController(text: product.quantity.toString());
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Cập nhật: ${product.name}'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'Số lượng mới',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-            onPressed: () {
-              final qty = int.tryParse(controller.text);
-              if (qty != null && qty >= 0) {
-                provider.updateStock(product.id, qty);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Đã cập nhật ${product.name}: $qty'), backgroundColor: Colors.green),
-                );
-              }
-            },
-            child: const Text('Cập nhật', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatPrice(double price) {
-    return price.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
     );
   }
 }

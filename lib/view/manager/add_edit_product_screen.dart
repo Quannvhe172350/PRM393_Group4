@@ -19,7 +19,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
   late TextEditingController _descriptionController;
-  String _selectedCategory = '';
+  late TextEditingController _barcodeController;
+  int? _selectedCategoryId;
 
   bool get isEditing => widget.product != null;
 
@@ -30,7 +31,12 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _priceController = TextEditingController(text: widget.product?.price.toString() ?? '');
     _quantityController = TextEditingController(text: widget.product?.quantity.toString() ?? '');
     _descriptionController = TextEditingController(text: widget.product?.description ?? '');
-    _selectedCategory = widget.product?.category ?? '';
+    _barcodeController = TextEditingController(text: widget.product?.barcode ?? '');
+    _selectedCategoryId = widget.product?.categoryId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryProvider>().loadCategories();
+    });
   }
 
   @override
@@ -39,6 +45,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _priceController.dispose();
     _quantityController.dispose();
     _descriptionController.dispose();
+    _barcodeController.dispose();
     super.dispose();
   }
 
@@ -65,7 +72,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(Icons.shopping_bag, size: 40, color: Colors.orange),
@@ -132,16 +139,25 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               // Category dropdown
               _buildLabel('Danh mục'),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory.isEmpty ? null : _selectedCategory,
+              DropdownButtonFormField<int>(
+                value: _selectedCategoryId,
                 decoration: _inputDecoration('Chọn danh mục'),
                 items: [
-                  const DropdownMenuItem(value: '', child: Text('Không chọn')),
+                  const DropdownMenuItem<int>(value: null, child: Text('Không chọn')),
                   ...categoryProvider.categories.map((cat) =>
-                    DropdownMenuItem(value: cat.name, child: Text(cat.name)),
+                    DropdownMenuItem<int>(value: cat.id, child: Text(cat.name)),
                   ),
                 ],
-                onChanged: (value) => setState(() => _selectedCategory = value ?? ''),
+                onChanged: (value) => setState(() => _selectedCategoryId = value),
+              ),
+              const SizedBox(height: 16),
+
+              // Barcode
+              _buildLabel('Mã vạch'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _barcodeController,
+                decoration: _inputDecoration('Nhập mã vạch sản phẩm'),
               ),
               const SizedBox(height: 16),
 
@@ -196,32 +212,37 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     );
   }
 
-  void _saveProduct() {
+  void _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = Provider.of<ProductProvider>(context, listen: false);
 
     final product = Product(
-      id: isEditing ? widget.product!.id : provider.generateId(),
+      id: isEditing ? widget.product!.id : null,
       name: _nameController.text.trim(),
       price: double.parse(_priceController.text.trim()),
       quantity: int.parse(_quantityController.text.trim()),
-      category: _selectedCategory,
+      categoryId: _selectedCategoryId,
       description: _descriptionController.text.trim(),
+      barcode: _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim(),
     );
 
     if (isEditing) {
-      provider.updateProduct(product);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã cập nhật sản phẩm'), backgroundColor: Colors.green),
-      );
+      await provider.updateProduct(product);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã cập nhật sản phẩm'), backgroundColor: Colors.green),
+        );
+      }
     } else {
-      provider.addProduct(product);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã thêm sản phẩm mới'), backgroundColor: Colors.green),
-      );
+      await provider.addProduct(product);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã thêm sản phẩm mới'), backgroundColor: Colors.green),
+        );
+      }
     }
 
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 }

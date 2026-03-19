@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
 import '../../providers/product_provider.dart';
-
 import 'add_edit_product_screen.dart';
 
 class ProductManagementScreen extends StatefulWidget {
@@ -14,6 +13,14 @@ class ProductManagementScreen extends StatefulWidget {
 
 class _ProductManagementScreenState extends State<ProductManagementScreen> {
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().loadProducts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +45,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm sản phẩm...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.7)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.7)),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.2),
+                fillColor: Colors.white.withValues(alpha: 0.2),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -65,7 +72,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -79,22 +86,24 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
           // Product list
           Expanded(
-            child: products.isEmpty
-                ? const Center(child: Text('Không tìm thấy sản phẩm', style: TextStyle(color: Colors.grey)))
-                : ListView.builder(
-                    itemCount: products.length,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemBuilder: (context, index) {
-                      final product = products[index];
-                      return _buildProductCard(context, product, productProvider);
-                    },
-                  ),
+            child: productProvider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : products.isEmpty
+                    ? const Center(child: Text('Không tìm thấy sản phẩm', style: TextStyle(color: Colors.grey)))
+                    : ListView.builder(
+                        itemCount: products.length,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return _buildProductCard(context, product, productProvider);
+                        },
+                      ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddEditProductScreen()),
           );
@@ -120,7 +129,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.shopping_bag, color: Colors.orange, size: 28),
@@ -152,7 +161,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(product.category, style: const TextStyle(fontSize: 10, color: Colors.grey)),
@@ -196,12 +205,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
           TextButton(
-            onPressed: () {
-              provider.deleteProduct(product.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Đã xóa "${product.name}"'), backgroundColor: Colors.red),
-              );
+            onPressed: () async {
+              await provider.deleteProduct(product.id!);
+              if (context.mounted) Navigator.pop(context);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Đã xóa "${product.name}"'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: const Text('Xóa', style: TextStyle(color: Colors.red)),
           ),
