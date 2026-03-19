@@ -32,8 +32,26 @@ class ManagerDashboardScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Đăng xuất',
             onPressed: () {
-              Navigator.pushReplacementNamed(context, '/');
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Đăng xuất'),
+                  content: const Text('Bạn có chắc muốn đăng xuất không?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.pushReplacementNamed(context, '/');
+                      },
+                      child: const Text('Đăng xuất'),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
         ],

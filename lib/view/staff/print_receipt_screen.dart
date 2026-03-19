@@ -160,11 +160,9 @@ class ReceiptScreen extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: () {
             // Hiển thị thông báo in thành công và quay lại
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Đang gửi lệnh in đến máy in K80..."),
-              ),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text("Đã in thành công!!")));
             Navigator.pop(context); // Quay về màn hình bán hàng
           },
           icon: const Icon(Icons.local_printshop),
