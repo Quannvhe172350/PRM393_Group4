@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supermarket_project_prm392_group4/view/staff/barcode_screen.dart';
 import 'home_screen.dart';
 import 'manager/manager_dashboard_screen.dart';
 
@@ -22,10 +23,16 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => const ManagerDashboardScreen()),
       );
     } else if (email == "admin" && password == "123456") {
-      // Đăng nhập với vai trò Staff/Admin
+      // Đăng nhập với vai trò /Admin
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    } else if (email == "staff" && password == "123456") {
+      // Đăng nhập với vai trò Staff
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => BarcodeScreen()),
       );
     } else {
       ScaffoldMessenger.of(
@@ -65,7 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const Text(
                   "Supermarket",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 const Text(
                   "Management System",
@@ -95,7 +106,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: InputDecoration(
                           labelText: "Username",
                           prefixIcon: Icon(Icons.person),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
 
@@ -107,7 +120,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: InputDecoration(
                           labelText: "Password",
                           prefixIcon: Icon(Icons.lock),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
 
@@ -120,11 +135,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.teal,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             elevation: 2,
                           ),
                           onPressed: login,
-                          child: Text("ĐĂNG NHẬP", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            "ĐĂNG NHẬP",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
 
@@ -139,10 +162,28 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: Column(
                           children: const [
-                            Text('Tài khoản mẫu:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text(
+                              'Tài khoản mẫu:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
                             SizedBox(height: 4),
-                            Text('Manager: manager / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                            Text('Staff: admin / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                            Text(
+                              'Manager: manager / 123456',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              'Staff: admin / 123456',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -154,7 +195,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 TextButton(
                   onPressed: () {},
-                  child: Text("Forgot Password?", style: TextStyle(color: Colors.white70)),
+                  child: Text(
+                    "Forgot Password?",
+                    style: TextStyle(color: Colors.white70),
+                  ),
                 ),
               ],
             ),

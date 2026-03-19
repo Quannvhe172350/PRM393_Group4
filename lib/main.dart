@@ -36,9 +36,8 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         ),
-        home: BarcodeScreen(),
 
-        /*  // Màn hình đầu tiên
+        // Màn hình đầu tiên
         initialRoute: '/',
 
         // Danh sách routes
@@ -47,7 +46,7 @@ class MyApp extends StatelessWidget {
           '/home': (context) => HomeScreen(),
           '/products': (context) => ProductScreen(),
           '/manager': (context) => const ManagerDashboardScreen(),
-        },*/
+        },
       ),
     );
   }
