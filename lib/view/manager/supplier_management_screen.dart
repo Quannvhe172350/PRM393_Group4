@@ -14,6 +14,15 @@ class _SupplierManagementScreenState extends State<SupplierManagementScreen> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    // Load suppliers from DB when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SupplierProvider>(context, listen: false).fetchSuppliers();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final supplierProvider = Provider.of<SupplierProvider>(context);
     final suppliers = supplierProvider.searchSuppliers(_searchQuery);
