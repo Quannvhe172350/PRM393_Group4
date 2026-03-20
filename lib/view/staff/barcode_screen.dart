@@ -13,7 +13,7 @@ class BarcodeScreen extends StatelessWidget {
         // Chống đẩy giao diện khi bàn phím hiện lên
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          title: const Text("BarcodeScreen"),
+          title: const Text("SUPERMAKET"),
           backgroundColor: Colors.green,
           centerTitle: true,
           elevation: 0,
@@ -59,19 +59,17 @@ class BarcodeScreen extends StatelessWidget {
                               child: TextField(
                                 controller: controller.barcodeController,
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
+                                decoration:  InputDecoration(
                                   hintText: "Ví dụ: 8934673...",
-                                  prefixIcon: Icon(
-                                    Icons.qr_code_scanner,
-                                    color: Colors.green,
+                                  prefixIcon: IconButton(
+                                    // NÚT BẤM MỞ CAMERA QUÉT MÃ
+                                    icon: const Icon(Icons.qr_code_scanner, color: Colors.green),
+                                    onPressed: () => controller.scanBarcode(context),
                                   ),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: 15,
-                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 15),
                                 ),
-                                onSubmitted: (val) =>
-                                    controller.handleManualInput(val, context),
+                                onSubmitted: (val) => controller.handleInput(val, context),
                               ),
                             ),
                           ),
@@ -79,19 +77,11 @@ class BarcodeScreen extends StatelessWidget {
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orangeAccent,
-                              foregroundColor: Colors.white,
-                              elevation: 2,
-                              // Sửa lỗi ở đây: Sử dụng RoundedRectangleBorder chuẩn
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               padding: const EdgeInsets.all(15),
                             ),
-                            onPressed: () => controller.handleManualInput(
-                              controller.barcodeController.text,
-                              context,
-                            ),
-                            child: const Icon(Icons.add_shopping_cart),
+                            onPressed: () => controller.handleInput(controller.barcodeController.text, context),
+                            child: const Icon(Icons.add_shopping_cart, color: Colors.white),
                           ),
                         ],
                       ),
@@ -177,19 +167,7 @@ class BarcodeScreen extends StatelessWidget {
                                                       TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              // Nút xóa (Icon Thùng rác)
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.delete_outline_rounded,
-                                                  color: Colors.redAccent,
-                                                  size: 22,
-                                                ),
-                                                onPressed: () => controller
-                                                    .removeFromCart(product),
-                                                constraints:
-                                                    const BoxConstraints(),
-                                                padding: EdgeInsets.zero,
-                                              ),
+
                                             ],
                                           ),
                                           Text(
@@ -214,10 +192,21 @@ class BarcodeScreen extends StatelessWidget {
                                     ),
 
                                     // 3. Bộ tăng giảm số lượng (Trailing)
-                                    _buildQtyController(
-                                      controller,
-                                      product,
-                                      qty,
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            color: Colors.redAccent,
+                                            size: 22,
+                                          ),
+                                          onPressed: () => controller.confirmRemove(product, context),
+                                          constraints: const BoxConstraints(),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        ),
+
+                                        _buildQtyController(context, controller, product, qty),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -235,6 +224,18 @@ class BarcodeScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.camera_enhance_outlined, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 10),
+          const Text("Sẵn sàng quét sản phẩm", style: TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
   // Widget hiển thị khi giỏ hàng trống
   Widget _buildEmptyCart() {
     return Center(
@@ -261,37 +262,73 @@ class BarcodeScreen extends StatelessWidget {
     );
   }
 
-  // Widget điều khiển số lượng
   Widget _buildQtyController(
-    BarcodeController controller,
-    var product,
-    int qty,
-  ) {
+      BuildContext context,
+      BarcodeController controller,
+      dynamic product, // Nên để dynamic hoặc Product để truy cập .quantity
+      int qty,
+      ) {
+    final bool isMaxStock = qty >= product.quantity;
+
     return Container(
+      margin: const EdgeInsets.only(left: 8),
       decoration: BoxDecoration(
         color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12), // Bo góc vuông hơn một chút cho hiện đại
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            onPressed: () => controller.decrease(product),
-            icon: const Icon(
-              Icons.remove_circle,
-              color: Colors.redAccent,
-              size: 24,
+          // --- NÚT GIẢM / XÓA ---
+          _buildSmallActionBtn(
+            icon: qty > 1 ? Icons.remove : Icons.delete_outline,
+            color: Colors.redAccent,
+            onPressed: () => controller.decrease(product, context),
+          ),
+
+          // --- SỐ LƯỢNG ---
+          Container(
+            constraints: const BoxConstraints(minWidth: 30),
+            alignment: Alignment.center,
+            child: Text(
+              "$qty",
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
           ),
-          Text(
-            "$qty",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          IconButton(
-            onPressed: () => controller.increase(product),
-            icon: const Icon(Icons.add_circle, color: Colors.green, size: 24),
+
+          // --- NÚT TĂNG ---
+          _buildSmallActionBtn(
+            icon: Icons.add,
+            color: isMaxStock ? Colors.grey : Colors.green,
+            onPressed: isMaxStock
+                ? null // Vô hiệu hóa khi hết kho
+                : () => controller.increase(product, context),
           ),
         ],
+      ),
+    );
+  }
+
+// Widget phụ trợ để tạo nút bấm nhỏ gọn, đồng nhất
+  Widget _buildSmallActionBtn({
+    required IconData icon,
+    required Color color,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: Icon(icon, color: color, size: 20),
+        splashRadius: 18,
       ),
     );
   }
@@ -341,7 +378,7 @@ class BarcodeScreen extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: controller.cart.isEmpty
-                      ? null
+                      ? null // Vô hiệu hóa nếu giỏ hàng trống
                       : () => controller.generatePaymentQR(context),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),

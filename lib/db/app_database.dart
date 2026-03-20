@@ -611,4 +611,22 @@ class AppDatabase {
     final res = await db.rawQuery("SELECT SUM(total_amount) as total FROM $tableOrders WHERE status = 'completed'");
     return (res.first['total'] as num?)?.toDouble() ?? 0.0;
   }
+  // Thêm vào trong class AppDatabase
+  Future<int> decreaseProductStock(int productId, int quantitySold) async {
+    final db = await database;
+
+    // Sử dụng lệnh UPDATE trực tiếp với phép trừ trong SQL
+    // WHERE quantity >= ? để đảm bảo không bị trừ âm kho
+    return await db.rawUpdate('''
+    UPDATE $tableProducts 
+    SET quantity = quantity - ?, 
+        updated_at = ? 
+    WHERE id = ? AND quantity >= ?
+  ''', [
+      quantitySold,
+      DateTime.now().toIso8601String(),
+      productId,
+      quantitySold
+    ]);
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supermarket_project_prm392_group4/controller/staff/barcode.dart';
 import 'package:supermarket_project_prm392_group4/providers/product_provider.dart';
 import 'package:supermarket_project_prm392_group4/providers/category_provider.dart';
 import 'package:supermarket_project_prm392_group4/providers/order_provider.dart';
@@ -22,6 +23,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => BarcodeController()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
