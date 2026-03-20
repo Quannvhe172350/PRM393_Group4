@@ -3,6 +3,7 @@ class Customer {
   final String name;
   final String? email;
   final String phone;
+  final String password;
   final String? address;
   final int loyaltyPoints;
   final String? membershipDate;
@@ -14,6 +15,7 @@ class Customer {
     required this.name,
     this.email,
     required this.phone,
+    this.password = '',
     this.address,
     this.loyaltyPoints = 0,
     this.membershipDate,
@@ -27,6 +29,7 @@ class Customer {
       name: map['name'] as String? ?? '',
       email: map['email'] as String?,
       phone: map['phone'] as String? ?? '',
+      password: map['password'] as String? ?? '',
       address: map['address'] as String?,
       loyaltyPoints: map['loyalty_points'] as int? ?? 0,
       membershipDate: map['membership_date'] as String?,
@@ -41,6 +44,7 @@ class Customer {
       'name': name,
       'email': email,
       'phone': phone,
+      'password': password,
       'address': address,
       'loyalty_points': loyaltyPoints,
       'membership_date': membershipDate ?? DateTime.now().toIso8601String(),
@@ -54,6 +58,7 @@ class Customer {
     String? name,
     String? email,
     String? phone,
+    String? password,
     String? address,
     int? loyaltyPoints,
     String? membershipDate,
@@ -65,6 +70,7 @@ class Customer {
       name: name ?? this.name,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      password: password ?? this.password,
       address: address ?? this.address,
       loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
       membershipDate: membershipDate ?? this.membershipDate,

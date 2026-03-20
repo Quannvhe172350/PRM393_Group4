@@ -21,7 +21,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
 
   static const _dbName = 'supermarket.db';
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
 
   static const tableUsers = 'users';
   static const tableCustomers = 'customers';
@@ -50,6 +50,7 @@ class AppDatabase {
       path,
       version: _dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -59,6 +60,13 @@ class AppDatabase {
   // ═══════════════════════════════════════════════════════════════════
   //  SCHEMA CREATION
   // ═══════════════════════════════════════════════════════════════════
+
+  FutureOr<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 3) {
+      // Thêm cột password cho bảng customers
+      await db.execute("ALTER TABLE $tableCustomers ADD COLUMN password TEXT NOT NULL DEFAULT ''");
+    }
+  }
 
   FutureOr<void> _onCreate(Database db, int version) async {
     // ── Users (admin / general staff) ──
@@ -82,6 +90,7 @@ class AppDatabase {
         name TEXT NOT NULL,
         email TEXT,
         phone TEXT NOT NULL,
+        password TEXT NOT NULL DEFAULT '',
         address TEXT,
         loyalty_points INTEGER NOT NULL DEFAULT 0,
         membership_date TEXT NOT NULL,
@@ -415,6 +424,18 @@ class AppDatabase {
   // ═══════════════════════════════════════════════════════════════════
   //  CUSTOMER CRUD
   // ═══════════════════════════════════════════════════════════════════
+
+  Future<Customer?> authenticateCustomer(String phone, String password) async {
+    final db = await database;
+    final maps = await db.query(
+      tableCustomers,
+      where: 'phone = ? AND password = ?',
+      whereArgs: [phone, password],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return Customer.fromMap(maps.first);
+  }
 
   Future<List<Customer>> getCustomers() async {
     final db = await database;
