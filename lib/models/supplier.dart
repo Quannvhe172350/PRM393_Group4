@@ -4,6 +4,7 @@ class Supplier {
   final String? email;
   final String? phone;
   final String? address;
+  final String? password;
   final String? createdAt;
 
   Supplier({
@@ -12,6 +13,7 @@ class Supplier {
     this.email,
     this.phone,
     this.address,
+    this.password,
     this.createdAt,
   });
 
@@ -22,6 +24,7 @@ class Supplier {
       email: map['email'] as String?,
       phone: map['phone'] as String?,
       address: map['address'] as String?,
+      password: map['password'] as String?,
       createdAt: map['created_at'] as String?,
     );
   }
@@ -33,6 +36,7 @@ class Supplier {
       'email': email,
       'phone': phone,
       'address': address,
+      'password': password,
       'created_at': createdAt ?? DateTime.now().toIso8601String(),
     };
   }
@@ -51,6 +55,7 @@ class Supplier {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      password: password ?? this.password,
       createdAt: createdAt ?? this.createdAt,
     );
   }

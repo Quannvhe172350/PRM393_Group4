@@ -12,7 +12,7 @@ class ProductProvider extends ChangeNotifier {
   int get lowStockCount => _products.where((p) => p.quantity < 10).length;
 
   ProductProvider() {
-    loadProducts();
+    // Để cho UI gọi load dữ liệu khi cần, tránh crash lúc khởi động
   }
 
   Future<void> loadProducts() async {

@@ -5,6 +5,7 @@ import 'manager/manager_dashboard_screen.dart';
 import 'manager/employee_management_screen.dart';
 import 'customer/customer_login_screen.dart';
 import 'staff/barcode_screen.dart';
+import 'supplier/supplier_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -47,6 +48,12 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
           }
         }
+        return;
+      }
+
+      final supplier = await AppDatabase.instance.authenticateSupplier(email, password);
+      if (supplier != null) {
+        if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SupplierDashboardScreen(supplier: supplier)));
         return;
       }
 
@@ -114,6 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text('Manager: b@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
                         Text('Admin: admin@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
                         Text('Staff: staff@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('Supplier: supplier@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       ]),
                     ),
                   ]),
