@@ -26,7 +26,7 @@ class StaffProvider extends ChangeNotifier {
   }
 
   StaffProvider() {
-    loadStaff();
+    // Để cho UI gọi load dữ liệu khi cần
   }
 
   Future<void> loadStaff() async {

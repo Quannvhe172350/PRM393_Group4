@@ -18,7 +18,7 @@ class OrderProvider extends ChangeNotifier {
       .fold(0.0, (sum, o) => sum + o.totalAmount);
 
   OrderProvider() {
-    loadOrders();
+    // Để cho UI gọi load dữ liệu khi cần
   }
 
   Future<void> loadOrders() async {

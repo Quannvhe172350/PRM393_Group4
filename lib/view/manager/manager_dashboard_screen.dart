@@ -11,6 +11,7 @@ import 'inventory_screen.dart';
 import 'employee_management_screen.dart';
 import 'supplier_management_screen.dart';
 import 'reports_screen.dart';
+import '../../view/supplier/supplier_list_screen.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -204,7 +205,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                   ),
                   _buildMenuCard(
                     context, 'Nhà CC', Icons.local_shipping, Colors.red,
-                    const SupplierManagementScreen(),
+                    const SupplierListScreen(),
                   ),
                   _buildMenuCard(
                     context, 'Báo cáo', Icons.bar_chart, const Color(0xFF2E7D32),

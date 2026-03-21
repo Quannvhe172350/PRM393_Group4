@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/supplier.dart';
-import '../../models/product.dart';
+import '../../models/supplier_product.dart';
 import '../../db/app_database.dart';
 
 class CreatePurchaseOrderScreen extends StatefulWidget {
@@ -13,8 +13,8 @@ class CreatePurchaseOrderScreen extends StatefulWidget {
 
 class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
   final AppDatabase _db = AppDatabase.instance;
-  List<Product> _products = [];
-  // Key là product.id (int), value là số lượng
+  List<SupplierProduct> _supplierProducts = [];
+  // Key là product_id (int), value là số lượng
   Map<int, int> _quantities = {};
   bool _isLoading = true;
 
@@ -25,9 +25,10 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
   }
 
   Future<void> _loadProducts() async {
-    final data = await _db.getProducts();
+    // Chỉ lấy sản phẩm của nhà cung cấp này
+    final data = await _db.getSupplierProducts(widget.supplier.id!);
     setState(() {
-      _products = data;
+      _supplierProducts = data;
       _isLoading = false;
     });
   }
@@ -41,17 +42,17 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
       final qty = entry.value;
       if (qty <= 0) continue;
 
-      final prod = _products.firstWhere(
-      (p) => p.id == entry.key,
+      final sp = _supplierProducts.firstWhere(
+        (s) => s.productId == entry.key,
         orElse: () => throw Exception('Không tìm thấy sản phẩm: ${entry.key}'),
       );
-      total += prod.price * qty;
+      total += sp.supplyPrice * qty;
       items.add({
         'po_id': poId,
-        'product_id': prod.id!,
+        'product_id': sp.productId,
         'quantity': qty,
-        'unit_price': prod.price,
-        'subtotal': prod.price * qty,
+        'unit_price': sp.supplyPrice,
+        'subtotal': sp.supplyPrice * qty,
       });
     }
 
@@ -72,6 +73,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
       'updated_at': DateTime.now().toIso8601String(),
     };
 
+    debugPrint('ORDER_DEBUG: Creating PO=$poId for supplier_id=${widget.supplier.id}, total=$total, items=${items.length}');
     await _db.insertPurchaseOrder(poMap, items);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,85 +89,87 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
     final total = _quantities.entries
         .where((e) => e.value > 0)
         .fold(0.0, (sum, e) {
-          final prod = _products.firstWhere((p) => p.id == e.key, orElse: () => _products.first);
-          return sum + prod.price * e.value;
+          final sp = _supplierProducts.firstWhere((s) => s.productId == e.key, orElse: () => _supplierProducts.first);
+          return sum + sp.supplyPrice * e.value;
         });
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tạo đơn hàng'),
+        title: Text('Đặt hàng - ${widget.supplier.name}'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Summary bar
-                if (selectedCount > 0)
-                  Container(
-                    color: Colors.indigo.shade50,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Đã chọn $selectedCount sản phẩm', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text('Tổng: ${total.toStringAsFixed(0)}đ', style: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _products.length,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemBuilder: (context, index) {
-                      final p = _products[index];
-                      final q = _quantities[p.id!] ?? 0;
-                      return ListTile(
-                        title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Giá: ${p.price.toStringAsFixed(0)}đ | Kho: ${p.quantity}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+          : _supplierProducts.isEmpty
+              ? const Center(child: Text('Nhà cung cấp này chưa có sản phẩm nào.', style: TextStyle(color: Colors.grey, fontSize: 16)))
+              : Column(
+                  children: [
+                    // Summary bar
+                    if (selectedCount > 0)
+                      Container(
+                        color: Colors.indigo.shade50,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-                              onPressed: q > 0
-                                  ? () => setState(() => _quantities[p.id!] = q - 1)
-                                  : null,
-                            ),
-                            SizedBox(
-                              width: 30,
-                              child: Text('$q', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.add_circle_outline, color: Colors.green),
-                              onPressed: () => setState(() => _quantities[p.id!] = q + 1),
-                            ),
+                            Text('Đã chọn $selectedCount sản phẩm', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text('Tổng: ${total.toStringAsFixed(0)}đ', style: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
                           ],
                         ),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.send),
-                      label: const Text('Gửi đơn hàng', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: _submit,
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _supplierProducts.length,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemBuilder: (context, index) {
+                          final sp = _supplierProducts[index];
+                          final q = _quantities[sp.productId] ?? 0;
+                          return ListTile(
+                            title: Text(sp.productName ?? 'SP #${sp.productId}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('Giá cung cấp: ${sp.supplyPrice.toStringAsFixed(0)}đ'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                  onPressed: q > 0
+                                      ? () => setState(() => _quantities[sp.productId] = q - 1)
+                                      : null,
+                                ),
+                                SizedBox(
+                                  width: 30,
+                                  child: Text('$q', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                                  onPressed: () => setState(() => _quantities[sp.productId] = q + 1),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.send),
+                          label: const Text('Gửi đơn hàng', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: _submit,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
     );
   }
 }

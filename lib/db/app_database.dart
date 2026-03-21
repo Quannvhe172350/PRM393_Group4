@@ -22,7 +22,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
 
   static const _dbName = 'supermarket.db';
-  static const _dbVersion = 4;
+  static const _dbVersion = 6;
 
   static const tableUsers = 'users';
   static const tableCustomers = 'customers';
@@ -65,21 +65,73 @@ class AppDatabase {
   // ═══════════════════════════════════════════════════════════════════
 
   FutureOr<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 3) {
-      // Thêm cột password cho bảng customers
-      await db.execute("ALTER TABLE $tableCustomers ADD COLUMN password TEXT NOT NULL DEFAULT ''");
-    }
-    if (oldVersion < 4) {
-      // Thêm tài khoản nhân viên Demo
-      await db.insert(tableUsers, {
-        'name': 'Nhân viên Demo',
-        'email': 'staff@supermarket.com',
-        'phone': '0900000011',
-        'password': '123456',
-        'role': 'staff',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String()
-      });
+    try {
+      if (oldVersion < 3) {
+        // Thêm cột password cho bảng customers
+        await db.execute("ALTER TABLE $tableCustomers ADD COLUMN password TEXT NOT NULL DEFAULT ''");
+      }
+      if (oldVersion < 4) {
+        // Thêm tài khoản nhân viên Demo
+        await db.insert(tableUsers, {
+          'name': 'Nhân viên Demo',
+          'email': 'staff@supermarket.com',
+          'phone': '0900000011',
+          'password': '123456',
+          'role': 'staff',
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String()
+        });
+      }
+      if (oldVersion < 5) {
+        // Kiểm tra xem cột password đã tồn tại chưa để tránh lỗi
+        var columns = await db.rawQuery("PRAGMA table_info($tableSuppliers)");
+        bool hasPassword = columns.any((column) => column['name'] == 'password');
+        
+        if (!hasPassword) {
+          await db.execute("ALTER TABLE $tableSuppliers ADD COLUMN password TEXT NOT NULL DEFAULT ''");
+        }
+        
+        // Thêm tài khoản demo Supplier (nếu chưa tồn tại)
+        final List<Map<String, dynamic>> maps = await db.query(
+          tableSuppliers,
+          where: 'email = ?',
+          whereArgs: ['supplier@supermarket.com'],
+        );
+        
+        if (maps.isEmpty) {
+          final now = DateTime.now().toIso8601String();
+          await db.insert(tableSuppliers, {
+            'name': 'Supplier Demo',
+            'email': 'supplier@supermarket.com',
+            'phone': '0901112223',
+            'address': '123 QL1A, Thủ Đức, TP.HCM',
+            'password': '123456',
+            'created_at': now
+          });
+        }
+      }
+      if (oldVersion < 6) {
+        // Đảm bảo không bị trùng lặp tài khoản demo
+        final List<Map<String, dynamic>> maps = await db.query(
+          tableSuppliers,
+          where: 'email = ?',
+          whereArgs: ['supplier@supermarket.com'],
+        );
+        
+        if (maps.isEmpty) {
+          final now = DateTime.now().toIso8601String();
+          await db.insert(tableSuppliers, {
+            'name': 'Supplier Demo',
+            'email': 'supplier@supermarket.com',
+            'phone': '0901112223',
+            'address': '123 QL1A, Thủ Đức, TP.HCM',
+            'password': '123456',
+            'created_at': now
+          });
+        }
+      }
+    } catch (e) {
+      print("Lỗi nâng cấp Database: $e");
     }
   }
 
@@ -183,6 +235,7 @@ class AppDatabase {
         email TEXT,
         phone TEXT,
         address TEXT,
+        password TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL
       )
     ''');
@@ -228,6 +281,7 @@ class AppDatabase {
         supplier_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
         supply_price REAL NOT NULL,
+        supplier_quantity INTEGER NOT NULL DEFAULT 0,
         last_supply_date TEXT,
         FOREIGN KEY (supplier_id) REFERENCES $tableSuppliers (id)
           ON DELETE CASCADE,
@@ -347,12 +401,13 @@ class AppDatabase {
       await db.insert(tableProducts, p);
     }
 
-    // ── Suppliers ──
+    // ── Suppliers (tất cả đều có mật khẩu 123456 để đăng nhập) ──
     final suppliers = [
-      {'name': 'Vinamilk', 'email': 'contact@vinamilk.com', 'phone': '02838155555', 'address': 'Quận 7, TP.HCM', 'created_at': now},
-      {'name': 'Coca-Cola Vietnam', 'email': 'info@coca-cola.vn', 'phone': '02838221234', 'address': 'Quận 2, TP.HCM', 'created_at': now},
-      {'name': 'Unilever Vietnam', 'email': 'contact@unilever.vn', 'phone': '02838234567', 'address': 'Quận 1, TP.HCM', 'created_at': now},
-      {'name': 'Acecook Vietnam', 'email': 'info@acecook.vn', 'phone': '02838345678', 'address': 'Quận Bình Tân, TP.HCM', 'created_at': now},
+      {'name': 'Vinamilk', 'email': 'contact@vinamilk.com', 'phone': '02838155555', 'address': 'Quận 7, TP.HCM', 'password': '123456', 'created_at': now},
+      {'name': 'Coca-Cola Vietnam', 'email': 'info@coca-cola.vn', 'phone': '02838221234', 'address': 'Quận 2, TP.HCM', 'password': '123456', 'created_at': now},
+      {'name': 'Unilever Vietnam', 'email': 'contact@unilever.vn', 'phone': '02838234567', 'address': 'Quận 1, TP.HCM', 'password': '123456', 'created_at': now},
+      {'name': 'Acecook Vietnam', 'email': 'info@acecook.vn', 'phone': '02838345678', 'address': 'Quận Bình Tân, TP.HCM', 'password': '123456', 'created_at': now},
+      {'name': 'Supplier Demo', 'email': 'supplier@supermarket.com', 'phone': '0901112223', 'address': '123 QL1A, Thủ Đức, TP.HCM', 'password': '123456', 'created_at': now},
     ];
     for (final s in suppliers) {
       await db.insert(tableSuppliers, s);
@@ -797,6 +852,18 @@ class AppDatabase {
     return Supplier.fromMap(maps.first);
   }
 
+  Future<Supplier?> authenticateSupplier(String email, String password) async {
+    final db = await database;
+    final maps = await db.query(
+      tableSuppliers,
+      where: 'email = ? AND password = ?',
+      whereArgs: [email, password],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return Supplier.fromMap(maps.first);
+  }
+
   Future<int> insertSupplier(Supplier supplier) async {
     final db = await database;
     return db.insert(tableSuppliers, supplier.toMap());
@@ -820,7 +887,7 @@ class AppDatabase {
   Future<List<SupplierProduct>> getSupplierProducts(int supplierId) async {
     final db = await database;
     final maps = await db.rawQuery('''
-      SELECT sp.*, p.name AS product_name
+      SELECT sp.*, p.name AS product_name, p.description AS product_description, p.quantity AS product_quantity, sp.supplier_quantity
       FROM $tableSupplierProducts sp
       JOIN $tableProducts p ON sp.product_id = p.id
       WHERE sp.supplier_id = ?
@@ -1104,6 +1171,20 @@ class AppDatabase {
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  //  PURCHASE ORDER ITEM HELPERS
+  // ═══════════════════════════════════════════════════════════════════
+
+  Future<List<Map<String, dynamic>>> getPurchaseOrderItems(String poId) async {
+    final db = await database;
+    return db.rawQuery('''
+      SELECT poi.*, p.name AS product_name
+      FROM $tablePurchaseOrderItems poi
+      JOIN $tableProducts p ON poi.product_id = p.id
+      WHERE poi.po_id = ?
+    ''', [poId]);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   //  PRODUCT STOCK HELPERS
   // ═══════════════════════════════════════════════════════════════════
 
@@ -1116,17 +1197,26 @@ class AppDatabase {
     ''', [quantity, DateTime.now().toIso8601String(), productId]);
   }
 
+  Future<void> increaseProductStock(int productId, int quantity) async {
+    final db = await database;
+    await db.rawUpdate('''
+      UPDATE $tableProducts
+      SET quantity = quantity + ?, updated_at = ?
+      WHERE id = ?
+    ''', [quantity, DateTime.now().toIso8601String(), productId]);
+  }
+
   Future<void> updateSupplierProductCatalog(int supplierId, int productId, {double? price, int? quantity}) async {
     final db = await database;
     if (price != null) {
       await db.rawUpdate('''
-        UPDATE $tableProducts SET price = ?, updated_at = ? WHERE id = ?
-      ''', [price, DateTime.now().toIso8601String(), productId]);
+        UPDATE $tableSupplierProducts SET supply_price = ? WHERE supplier_id = ? AND product_id = ?
+      ''', [price, supplierId, productId]);
     }
     if (quantity != null) {
       await db.rawUpdate('''
-        UPDATE $tableProducts SET quantity = ?, updated_at = ? WHERE id = ?
-      ''', [quantity, DateTime.now().toIso8601String(), productId]);
+        UPDATE $tableSupplierProducts SET supplier_quantity = ? WHERE supplier_id = ? AND product_id = ?
+      ''', [quantity, supplierId, productId]);
     }
   }
 

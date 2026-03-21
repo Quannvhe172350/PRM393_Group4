@@ -11,7 +11,7 @@ class CategoryProvider extends ChangeNotifier {
   int get totalCategories => _categories.length;
 
   CategoryProvider() {
-    loadCategories();
+    // Để cho UI gọi load dữ liệu khi cần
   }
 
   Future<void> loadCategories() async {
