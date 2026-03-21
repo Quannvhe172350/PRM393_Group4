@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
+import '../db/app_database.dart';
 import '../models/category.dart';
 
 class CategoryProvider extends ChangeNotifier {
-  final List<Category> _categories = [
-    Category(id: '1', name: 'Đồ uống', description: 'Nước giải khát, sữa, nước ép'),
-    Category(id: '2', name: 'Bánh', description: 'Bánh mì, bánh ngọt, bánh snack'),
-    Category(id: '3', name: 'Trái cây', description: 'Trái cây tươi trong và ngoài nước'),
-    Category(id: '4', name: 'Thực phẩm', description: 'Thực phẩm khô, đông lạnh'),
-    Category(id: '5', name: 'Gia vị', description: 'Nước mắm, muối, đường, bột ngọt'),
-    Category(id: '6', name: 'Đồ dùng', description: 'Đồ dùng gia đình, vệ sinh'),
-  ];
+  List<Category> _categories = [];
+  bool _isLoading = false;
 
-  List<Category> get categories => List.unmodifiable(_categories);
-
+  List<Category> get categories => _categories;
+  bool get isLoading => _isLoading;
   int get totalCategories => _categories.length;
 
-  Category? getById(String id) {
+  CategoryProvider() {
+    loadCategories();
+  }
+
+  Future<void> loadCategories() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _categories = await AppDatabase.instance.getCategories();
+    } catch (e) {
+      debugPrint('Error loading categories: $e');
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Category? getById(int id) {
     try {
       return _categories.firstWhere((c) => c.id == id);
     } catch (_) {
@@ -23,25 +34,18 @@ class CategoryProvider extends ChangeNotifier {
     }
   }
 
-  void addCategory(Category category) {
-    _categories.add(category);
-    notifyListeners();
+  Future<void> addCategory(Category category) async {
+    await AppDatabase.instance.insertCategory(category);
+    await loadCategories();
   }
 
-  void updateCategory(Category category) {
-    final index = _categories.indexWhere((c) => c.id == category.id);
-    if (index != -1) {
-      _categories[index] = category;
-      notifyListeners();
-    }
+  Future<void> updateCategory(Category category) async {
+    await AppDatabase.instance.updateCategory(category);
+    await loadCategories();
   }
 
-  void deleteCategory(String id) {
-    _categories.removeWhere((c) => c.id == id);
-    notifyListeners();
-  }
-
-  String generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+  Future<void> deleteCategory(int id) async {
+    await AppDatabase.instance.deleteCategory(id);
+    await loadCategories();
   }
 }

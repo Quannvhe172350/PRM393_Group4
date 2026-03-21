@@ -1,53 +1,66 @@
 class OrderItem {
-  String? orderId;
-  String productId;
-  String productName;
-  int quantity;
-  double price;
+  final int? id;
+  final int? orderId;
+  final int productId;
+  final int quantity;
+  final double unitPrice;
+  final double subtotal;
+
+  // Joined field
+  final String? productName;
 
   OrderItem({
+    this.id,
     this.orderId,
     required this.productId,
-    required this.productName,
     required this.quantity,
-    required this.price,
+    required this.unitPrice,
+    required this.subtotal,
+    this.productName,
   });
 
-  double get total => quantity * price;
-
-  Map<String, dynamic> toMap() {
-    return {
-      if (orderId != null) 'orderId': orderId,
-      'productId': productId,
-      'productName': productName,
-      'quantity': quantity,
-      'price': price,
-    };
-  }
+  double get total => subtotal;
 
   factory OrderItem.fromMap(Map<String, dynamic> map) {
     return OrderItem(
-      orderId: map['orderId'],
-      productId: map['productId'] ?? '',
-      productName: map['productName'] ?? '',
-      quantity: (map['quantity'] ?? 0).toInt(),
-      price: (map['price'] ?? 0).toDouble(),
+      id: map['id'] as int?,
+      orderId: map['order_id'] as int?,
+      productId: (map['product_id'] as num?)?.toInt() ?? 0,
+      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+      unitPrice: (map['unit_price'] as num?)?.toDouble() ?? 0.0,
+      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
+      productName: map['product_name'] as String?,
     );
   }
 
+  Map<String, dynamic> toMap() {
+    return {
+      if (id != null) 'id': id,
+      if (orderId != null) 'order_id': orderId,
+      'product_id': productId,
+      'quantity': quantity,
+      'unit_price': unitPrice,
+      'subtotal': subtotal,
+    };
+  }
+
   OrderItem copyWith({
-    String? orderId,
-    String? productId,
-    String? productName,
+    int? id,
+    int? orderId,
+    int? productId,
     int? quantity,
-    double? price,
+    double? unitPrice,
+    double? subtotal,
+    String? productName,
   }) {
     return OrderItem(
+      id: id ?? this.id,
       orderId: orderId ?? this.orderId,
       productId: productId ?? this.productId,
-      productName: productName ?? this.productName,
       quantity: quantity ?? this.quantity,
-      price: price ?? this.price,
+      unitPrice: unitPrice ?? this.unitPrice,
+      subtotal: subtotal ?? this.subtotal,
+      productName: productName ?? this.productName,
     );
   }
 }

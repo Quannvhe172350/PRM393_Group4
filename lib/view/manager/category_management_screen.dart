@@ -3,8 +3,21 @@ import 'package:provider/provider.dart';
 import '../../models/category.dart';
 import '../../providers/category_provider.dart';
 
-class CategoryManagementScreen extends StatelessWidget {
+class CategoryManagementScreen extends StatefulWidget {
   const CategoryManagementScreen({super.key});
+
+  @override
+  State<CategoryManagementScreen> createState() => _CategoryManagementScreenState();
+}
+
+class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryProvider>().loadCategories();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,49 +31,51 @@ class CategoryManagementScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: categories.isEmpty
-          ? const Center(child: Text('Chưa có danh mục nào', style: TextStyle(color: Colors.grey, fontSize: 16)))
-          : ListView.builder(
-              itemCount: categories.length,
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+      body: categoryProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : categories.isEmpty
+              ? const Center(child: Text('Chưa có danh mục nào', style: TextStyle(color: Colors.grey, fontSize: 16)))
+              : ListView.builder(
+                  itemCount: categories.length,
+                  padding: const EdgeInsets.all(16),
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.category, color: Colors.indigo),
+                        ),
+                        title: Text(category.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: (category.description ?? '').isNotEmpty
+                            ? Text(category.description!, style: const TextStyle(fontSize: 12, color: Colors.grey))
+                            : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.indigo, size: 20),
+                              onPressed: () => _showAddEditDialog(context, categoryProvider, category: category),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                              onPressed: () => _showDeleteDialog(context, category, categoryProvider),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Icon(Icons.category, color: Colors.indigo),
-                    ),
-                    title: Text(category.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: category.description.isNotEmpty
-                        ? Text(category.description, style: const TextStyle(fontSize: 12, color: Colors.grey))
-                        : null,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.indigo, size: 20),
-                          onPressed: () => _showAddEditDialog(context, categoryProvider, category: category),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                          onPressed: () => _showDeleteDialog(context, category, categoryProvider),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                    );
+                  },
+                ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddEditDialog(context, categoryProvider),
         backgroundColor: Colors.indigo,
@@ -77,7 +92,7 @@ class CategoryManagementScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(isEditing ? 'Sửa danh mục' : 'Thêm danh mục'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Column(
@@ -102,26 +117,25 @@ class CategoryManagementScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Hủy')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
-            onPressed: () {
+            onPressed: () async {
               if (nameController.text.trim().isEmpty) return;
 
               if (isEditing) {
-                provider.updateCategory(Category(
-                  id: category?.id ?? '',
+                await provider.updateCategory(Category(
+                  id: category?.id,
                   name: nameController.text.trim(),
                   description: descController.text.trim(),
                 ));
               } else {
-                provider.addCategory(Category(
-                  id: provider.generateId(),
+                await provider.addCategory(Category(
                   name: nameController.text.trim(),
                   description: descController.text.trim(),
                 ));
               }
-              Navigator.pop(context);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
             },
             child: Text(isEditing ? 'Cập nhật' : 'Thêm', style: const TextStyle(color: Colors.white)),
           ),
@@ -133,18 +147,20 @@ class CategoryManagementScreen extends StatelessWidget {
   void _showDeleteDialog(BuildContext context, Category category, CategoryProvider provider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Xóa danh mục'),
         content: Text('Bạn có chắc muốn xóa "${category.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Hủy')),
           TextButton(
-            onPressed: () {
-              provider.deleteCategory(category.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Đã xóa "${category.name}"'), backgroundColor: Colors.red),
-              );
+            onPressed: () async {
+              await provider.deleteCategory(category.id!);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Đã xóa "${category.name}"'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: const Text('Xóa', style: TextStyle(color: Colors.red)),
           ),
