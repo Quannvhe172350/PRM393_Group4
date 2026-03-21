@@ -91,7 +91,7 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                             child: ListTile(
                               leading: const CircleAvatar(backgroundColor: Colors.redAccent, child: Icon(Icons.business, color: Colors.white)),
                               title: Text(supplier.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text(supplier.email),
+                              subtitle: Text(supplier.email ?? 'Chưa có email'),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () {
                                 Navigator.push(

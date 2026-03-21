@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supermarket_project_prm392_group4/controller/staff/barcode.dart';
+import '../login_screen.dart';
 
 class BarcodeScreen extends StatelessWidget {
   const BarcodeScreen({super.key});
@@ -17,6 +18,19 @@ class BarcodeScreen extends StatelessWidget {
           backgroundColor: Colors.green,
           centerTitle: true,
           elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Đăng xuất',
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                  (route) => false,
+                );
+              },
+            ),
+          ],
         ),
         body: Consumer<BarcodeController>(
           builder: (context, controller, _) {
@@ -132,9 +146,9 @@ class BarcodeScreen extends StatelessWidget {
                                     // 1. Ảnh sản phẩm
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
-                                      child: product.imageUrl.isNotEmpty
+                                      child: (product.imageUrl != null && product.imageUrl!.isNotEmpty)
                                           ? Image.network(
-                                              product.imageUrl,
+                                              product.imageUrl!,
                                               width: 65,
                                               height: 65,
                                               fit: BoxFit.cover,

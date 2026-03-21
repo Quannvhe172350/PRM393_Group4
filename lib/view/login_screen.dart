@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../db/app_database.dart';
 import 'home_screen.dart';
 import 'manager/manager_dashboard_screen.dart';
+import 'manager/employee_management_screen.dart';
 import 'customer/customer_login_screen.dart';
+import 'staff/barcode_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -36,7 +38,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = await AppDatabase.instance.authenticate(email, password);
       if (user != null) {
-        if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
+        if (mounted) {
+          if (user.role == 'staff') {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const BarcodeScreen()));
+          } else if (user.role == 'admin') {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const EmployeeManagementScreen(isAdmin: true)));
+          } else {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
+          }
+        }
         return;
       }
 
@@ -101,9 +111,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                       child: const Column(children: [
                         Text('Tài khoản mẫu:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                        SizedBox(height: 4),
                         Text('Manager: b@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
                         Text('Admin: admin@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('Staff: staff@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       ]),
                     ),
                   ]),

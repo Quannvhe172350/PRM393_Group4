@@ -11,6 +11,7 @@ import '../models/manager.dart';
 import '../models/order.dart';
 import '../models/order_item.dart';
 import '../models/product.dart';
+import '../models/purchase_order.dart';
 import '../models/supplier.dart';
 import '../models/supplier_product.dart';
 import '../models/user.dart';
@@ -21,7 +22,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
 
   static const _dbName = 'supermarket.db';
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
 
   static const tableUsers = 'users';
   static const tableCustomers = 'customers';
@@ -33,6 +34,8 @@ class AppDatabase {
   static const tableOrders = 'orders';
   static const tableOrderItems = 'order_items';
   static const tableSupplierProducts = 'supplier_products';
+  static const tablePurchaseOrders = 'purchase_orders';
+  static const tablePurchaseOrderItems = 'purchase_order_items';
 
   Database? _database;
 
@@ -65,6 +68,18 @@ class AppDatabase {
     if (oldVersion < 3) {
       // Thêm cột password cho bảng customers
       await db.execute("ALTER TABLE $tableCustomers ADD COLUMN password TEXT NOT NULL DEFAULT ''");
+    }
+    if (oldVersion < 4) {
+      // Thêm tài khoản nhân viên Demo
+      await db.insert(tableUsers, {
+        'name': 'Nhân viên Demo',
+        'email': 'staff@supermarket.com',
+        'phone': '0900000011',
+        'password': '123456',
+        'role': 'staff',
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String()
+      });
     }
   }
 
@@ -221,6 +236,37 @@ class AppDatabase {
       )
     ''');
 
+    // ── Purchase Orders ──
+    await db.execute('''
+      CREATE TABLE $tablePurchaseOrders (
+        id TEXT PRIMARY KEY,
+        supplier_id INTEGER NOT NULL,
+        order_date TEXT NOT NULL,
+        total_amount REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (supplier_id) REFERENCES $tableSuppliers (id)
+          ON DELETE CASCADE
+      )
+    ''');
+
+    // ── Purchase Order Items ──
+    await db.execute('''
+      CREATE TABLE $tablePurchaseOrderItems (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        po_id TEXT NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        unit_price REAL NOT NULL,
+        subtotal REAL NOT NULL,
+        FOREIGN KEY (po_id) REFERENCES $tablePurchaseOrders (id)
+          ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES $tableProducts (id)
+          ON DELETE RESTRICT
+      )
+    ''');
+
     await _seedData(db);
   }
 
@@ -235,6 +281,7 @@ class AppDatabase {
     final users = [
       {'name': 'Admin', 'email': 'admin@supermarket.com', 'phone': '0900000000', 'password': '123456', 'role': 'admin', 'created_at': now, 'updated_at': now},
       {'name': 'Nguyen Van A', 'email': 'a@example.com', 'phone': '0900000001', 'password': '123456', 'role': 'staff', 'created_at': now, 'updated_at': now},
+      {'name': 'Nhân viên Demo', 'email': 'staff@supermarket.com', 'phone': '0900000011', 'password': '123456', 'role': 'staff', 'created_at': now, 'updated_at': now},
     ];
     for (final u in users) {
       await db.insert(tableUsers, u);
@@ -1019,6 +1066,68 @@ class AppDatabase {
       ORDER BY total_spent DESC
       LIMIT ?
     ''', [limit]);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  PURCHASE ORDER CRUD
+  // ═══════════════════════════════════════════════════════════════════
+
+  Future<List<PurchaseOrder>> getPurchaseOrders({required int supplierId}) async {
+    final db = await database;
+    final maps = await db.query(
+      tablePurchaseOrders,
+      where: 'supplier_id = ?',
+      whereArgs: [supplierId],
+      orderBy: 'created_at DESC',
+    );
+    return maps.map((m) => PurchaseOrder.fromMap(m)).toList();
+  }
+
+  Future<void> insertPurchaseOrder(Map<String, dynamic> poMap, List<Map<String, dynamic>> items) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.insert(tablePurchaseOrders, poMap);
+      for (final item in items) {
+        await txn.insert(tablePurchaseOrderItems, item);
+      }
+    });
+  }
+
+  Future<int> updatePurchaseOrderStatus(String poId, String status) async {
+    final db = await database;
+    return db.update(
+      tablePurchaseOrders,
+      {'status': status, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [poId],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  PRODUCT STOCK HELPERS
+  // ═══════════════════════════════════════════════════════════════════
+
+  Future<void> decreaseProductStock(int productId, int quantity) async {
+    final db = await database;
+    await db.rawUpdate('''
+      UPDATE $tableProducts
+      SET quantity = quantity - ?, updated_at = ?
+      WHERE id = ?
+    ''', [quantity, DateTime.now().toIso8601String(), productId]);
+  }
+
+  Future<void> updateSupplierProductCatalog(int supplierId, int productId, {double? price, int? quantity}) async {
+    final db = await database;
+    if (price != null) {
+      await db.rawUpdate('''
+        UPDATE $tableProducts SET price = ?, updated_at = ? WHERE id = ?
+      ''', [price, DateTime.now().toIso8601String(), productId]);
+    }
+    if (quantity != null) {
+      await db.rawUpdate('''
+        UPDATE $tableProducts SET quantity = ?, updated_at = ? WHERE id = ?
+      ''', [quantity, DateTime.now().toIso8601String(), productId]);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════

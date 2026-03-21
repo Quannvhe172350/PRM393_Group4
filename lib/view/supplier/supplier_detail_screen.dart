@@ -28,7 +28,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final allProducts = await _db.getProducts();
-    final orders = await _db.getPurchaseOrders(supplierId: int.parse(widget.supplier.id));
+    final orders = await _db.getPurchaseOrders(supplierId: widget.supplier.id!);
 
     setState(() {
       _catalog = allProducts;
@@ -112,8 +112,8 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
           ElevatedButton(
             onPressed: () async {
               await _db.updateSupplierProductCatalog(
-                int.parse(widget.supplier.id),
-                int.parse(product.id),
+                widget.supplier.id!,
+                product.id!,
                 price: double.tryParse(priceController.text),
                 quantity: int.tryParse(qtyController.text),
               );

@@ -14,8 +14,8 @@ class CreatePurchaseOrderScreen extends StatefulWidget {
 class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
   final AppDatabase _db = AppDatabase.instance;
   List<Product> _products = [];
-  // Key là product.id (String), value là số lượng
-  Map<String, int> _quantities = {};
+  // Key là product.id (int), value là số lượng
+  Map<int, int> _quantities = {};
   bool _isLoading = true;
 
   @override
@@ -42,13 +42,13 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
       if (qty <= 0) continue;
 
       final prod = _products.firstWhere(
-        (p) => p.id == entry.key,
+      (p) => p.id == entry.key,
         orElse: () => throw Exception('Không tìm thấy sản phẩm: ${entry.key}'),
       );
       total += prod.price * qty;
       items.add({
         'po_id': poId,
-        'product_id': int.parse(prod.id),
+        'product_id': prod.id!,
         'quantity': qty,
         'unit_price': prod.price,
         'subtotal': prod.price * qty,
@@ -64,7 +64,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
 
     final poMap = {
       'id': poId,
-      'supplier_id': int.parse(widget.supplier.id),
+      'supplier_id': widget.supplier.id!,
       'order_date': DateTime.now().toIso8601String(),
       'total_amount': total,
       'status': 'pending',
@@ -120,7 +120,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemBuilder: (context, index) {
                       final p = _products[index];
-                      final q = _quantities[p.id] ?? 0;
+                      final q = _quantities[p.id!] ?? 0;
                       return ListTile(
                         title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('Giá: ${p.price.toStringAsFixed(0)}đ | Kho: ${p.quantity}'),
@@ -130,7 +130,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                             IconButton(
                               icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
                               onPressed: q > 0
-                                  ? () => setState(() => _quantities[p.id] = q - 1)
+                                  ? () => setState(() => _quantities[p.id!] = q - 1)
                                   : null,
                             ),
                             SizedBox(
@@ -139,7 +139,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.add_circle_outline, color: Colors.green),
-                              onPressed: () => setState(() => _quantities[p.id] = q + 1),
+                              onPressed: () => setState(() => _quantities[p.id!] = q + 1),
                             ),
                           ],
                         ),

@@ -5,7 +5,8 @@ import '../../models/cashier.dart';
 import '../../providers/staff_provider.dart';
 
 class EmployeeManagementScreen extends StatefulWidget {
-  const EmployeeManagementScreen({super.key});
+  final bool isAdmin;
+  const EmployeeManagementScreen({super.key, this.isAdmin = false});
 
   @override
   State<EmployeeManagementScreen> createState() => _EmployeeManagementScreenState();
@@ -29,10 +30,20 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quản lý Nhân viên'),
+        title: Text(widget.isAdmin ? 'Quản lý Tài khoản (Admin)' : 'Quản lý Nhân viên'),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          if (widget.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Đăng xuất',
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, '/');
+              },
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -96,12 +107,14 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddStaffDialog(context, staffProvider),
-        backgroundColor: Colors.purple,
-        icon: const Icon(Icons.person_add, color: Colors.white),
-        label: const Text('Thêm NV', style: TextStyle(color: Colors.white)),
-      ),
+      floatingActionButton: widget.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () => _showAddStaffDialog(context, staffProvider),
+              backgroundColor: Colors.purple,
+              icon: const Icon(Icons.person_add, color: Colors.white),
+              label: const Text('Thêm NV', style: TextStyle(color: Colors.white)),
+            )
+          : null,
     );
   }
 
@@ -154,14 +167,15 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'edit') {
-                  _showEditManagerDialog(context, provider, manager);
+                  _showEditManagerDialog(context, provider, manager, widget.isAdmin);
                 } else if (value == 'delete') {
                   _showDeleteDialog(context, manager.name, () => provider.deleteManager(manager.id!));
                 }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18), SizedBox(width: 8), Text('Sửa')])),
-                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: Colors.red))])),
+                if (widget.isAdmin)
+                  const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: Colors.red))])),
               ],
             ),
           ],
@@ -221,14 +235,15 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'edit') {
-                  _showEditCashierDialog(context, provider, cashier);
+                  _showEditCashierDialog(context, provider, cashier, widget.isAdmin);
                 } else if (value == 'delete') {
                   _showDeleteDialog(context, cashier.name, () => provider.deleteCashier(cashier.id!));
                 }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18), SizedBox(width: 8), Text('Sửa')])),
-                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: Colors.red))])),
+                if (widget.isAdmin)
+                  const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: Colors.red))])),
               ],
             ),
           ],
@@ -311,7 +326,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
     );
   }
 
-  void _showEditManagerDialog(BuildContext context, StaffProvider provider, Manager manager) {
+  void _showEditManagerDialog(BuildContext context, StaffProvider provider, Manager manager, bool isAdmin) {
     final nameController = TextEditingController(text: manager.name);
     final emailController = TextEditingController(text: manager.email);
     final phoneController = TextEditingController(text: manager.phone);
@@ -326,13 +341,22 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(controller: nameController, decoration: InputDecoration(labelText: 'Họ tên', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-              const SizedBox(height: 10),
-              TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-              const SizedBox(height: 10),
-              TextField(controller: phoneController, decoration: InputDecoration(labelText: 'SĐT', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-              const SizedBox(height: 10),
+              if (isAdmin) ...[
+                TextField(controller: nameController, decoration: InputDecoration(labelText: 'Họ tên', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                const SizedBox(height: 10),
+                TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                const SizedBox(height: 10),
+                TextField(controller: phoneController, decoration: InputDecoration(labelText: 'SĐT', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+              ] else ...[
+                Text('Họ tên: ${manager.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text('Email: ${manager.email}'),
+                const SizedBox(height: 6),
+                Text('SĐT: ${manager.phone}'),
+              ],
+              const SizedBox(height: 16),
               TextField(controller: deptController, decoration: InputDecoration(labelText: 'Bộ phận', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
               const SizedBox(height: 10),
               TextField(controller: salaryController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Lương', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
@@ -345,9 +369,9 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
             onPressed: () async {
               await provider.updateManager(manager.copyWith(
-                name: nameController.text.trim(),
-                email: emailController.text.trim(),
-                phone: phoneController.text.trim(),
+                name: isAdmin ? nameController.text.trim() : manager.name,
+                email: isAdmin ? emailController.text.trim() : manager.email,
+                phone: isAdmin ? phoneController.text.trim() : manager.phone,
                 department: deptController.text.trim(),
                 salary: double.tryParse(salaryController.text.trim()),
               ));
@@ -360,7 +384,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
     );
   }
 
-  void _showEditCashierDialog(BuildContext context, StaffProvider provider, Cashier cashier) {
+  void _showEditCashierDialog(BuildContext context, StaffProvider provider, Cashier cashier, bool isAdmin) {
     final nameController = TextEditingController(text: cashier.name);
     final emailController = TextEditingController(text: cashier.email);
     final phoneController = TextEditingController(text: cashier.phone);
@@ -376,13 +400,22 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(controller: nameController, decoration: InputDecoration(labelText: 'Họ tên', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-                const SizedBox(height: 10),
-                TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-                const SizedBox(height: 10),
-                TextField(controller: phoneController, decoration: InputDecoration(labelText: 'SĐT', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-                const SizedBox(height: 10),
+                if (isAdmin) ...[
+                  TextField(controller: nameController, decoration: InputDecoration(labelText: 'Họ tên', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                  const SizedBox(height: 10),
+                  TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                  const SizedBox(height: 10),
+                  TextField(controller: phoneController, decoration: InputDecoration(labelText: 'SĐT', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                ] else ...[
+                  Text('Họ tên: ${cashier.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text('Email: ${cashier.email}'),
+                  const SizedBox(height: 6),
+                  Text('SĐT: ${cashier.phone}'),
+                ],
+                const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: shift,
                   decoration: InputDecoration(labelText: 'Ca làm', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
@@ -404,9 +437,9 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
               onPressed: () async {
                 await provider.updateCashier(cashier.copyWith(
-                  name: nameController.text.trim(),
-                  email: emailController.text.trim(),
-                  phone: phoneController.text.trim(),
+                  name: isAdmin ? nameController.text.trim() : cashier.name,
+                  email: isAdmin ? emailController.text.trim() : cashier.email,
+                  phone: isAdmin ? phoneController.text.trim() : cashier.phone,
                   shift: shift,
                   salary: double.tryParse(salaryController.text.trim()),
                 ));
