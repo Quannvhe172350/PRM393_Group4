@@ -19,7 +19,6 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -38,7 +37,6 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -49,7 +47,6 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
-    final password = _passwordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || phone.isEmpty) {
       if (mounted) {
@@ -60,11 +57,30 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       return;
     }
 
+    final emailExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailExp.hasMatch(email)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email không hợp lệ'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    final phoneExp = RegExp(r'^(0|\+84)[0-9]{9}$');
+    if (!phoneExp.hasMatch(phone)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Số điện thoại không hợp lệ'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
     final updated = user.copyWith(
       name: name,
       email: email,
       phone: phone,
-      password: password.isEmpty ? user.password : password,
     );
     await AppDatabase.instance.updateUser(updated);
 
@@ -256,16 +272,6 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                   readOnly: !canEdit,
                   decoration: InputDecoration(
                     labelText: 'Số điện thoại',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  readOnly: !canEdit,
-                  decoration: InputDecoration(
-                    labelText: 'Mật khẩu (để trống nếu không đổi)',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),

@@ -1260,6 +1260,60 @@ class AppDatabase {
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  //  PASSWORD UPDATES
+  // ═══════════════════════════════════════════════════════════════════
+
+  Future<int> updateUserPassword(int id, String newPassword) async {
+    final db = await database;
+    return db.update(
+      tableUsers,
+      {'password': newPassword, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateCustomerPassword(int id, String newPassword) async {
+    final db = await database;
+    return db.update(
+      tableCustomers,
+      {'password': newPassword, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateManagerPassword(int id, String newPassword) async {
+    final db = await database;
+    return db.update(
+      tableManagers,
+      {'password': newPassword, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateSupplierPassword(int id, String newPassword) async {
+    final db = await database;
+    return db.update(
+      tableSuppliers,
+      {'password': newPassword},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateCashierPassword(int id, String newPassword) async {
+    final db = await database;
+    return db.update(
+      tableCashiers,
+      {'password': newPassword, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   //  PURCHASE ORDER CRUD
   // ═══════════════════════════════════════════════════════════════════
 

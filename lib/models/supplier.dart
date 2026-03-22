@@ -47,6 +47,7 @@ class Supplier {
     String? email,
     String? phone,
     String? address,
+    String? password,
     String? createdAt,
   }) {
     return Supplier(

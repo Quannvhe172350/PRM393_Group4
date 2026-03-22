@@ -7,6 +7,7 @@ import 'package:supermarket_project_prm392_group4/providers/staff_provider.dart'
 import 'package:supermarket_project_prm392_group4/providers/supplier_provider.dart';
 import 'package:supermarket_project_prm392_group4/providers/customer_provider.dart';
 import 'package:supermarket_project_prm392_group4/providers/cart_provider.dart';
+import 'package:supermarket_project_prm392_group4/providers/auth_provider.dart';
 import 'package:supermarket_project_prm392_group4/view/home_screen.dart';
 import 'package:supermarket_project_prm392_group4/view/login_screen.dart';
 import 'package:supermarket_project_prm392_group4/view/product_screen.dart';
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SupplierProvider()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
         title: 'Supermarket Management',

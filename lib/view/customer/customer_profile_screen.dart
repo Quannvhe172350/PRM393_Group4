@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../db/app_database.dart';
+import '../widgets/change_password_dialog.dart';
 
 class CustomerProfileScreen extends StatelessWidget {
   const CustomerProfileScreen({super.key});
@@ -60,6 +62,28 @@ class CustomerProfileScreen extends StatelessWidget {
           onPressed: () => _showEditDialog(context, customerProv),
           icon: const Icon(Icons.edit, color: Colors.orange),
           label: const Text('Chỉnh sửa thông tin', style: TextStyle(color: Colors.orange)),
+        )),
+        const SizedBox(height: 12),
+
+        // Change password button
+        SizedBox(width: double.infinity, height: 48, child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.orange), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => ChangePasswordDialog(
+                onChangePassword: (currentPass, newPass) async {
+                  if (customer.password != currentPass) return false;
+                  await AppDatabase.instance.updateCustomerPassword(customer.id!, newPass);
+                  // Update customer in provider memory
+                  await customerProv.updateProfile(customer.copyWith(password: newPass));
+                  return true;
+                },
+              )
+            );
+          },
+          icon: const Icon(Icons.lock, color: Colors.orange),
+          label: const Text('Đổi mật khẩu', style: TextStyle(color: Colors.orange)),
         )),
         const SizedBox(height: 12),
 

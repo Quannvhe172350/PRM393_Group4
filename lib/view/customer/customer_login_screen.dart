@@ -54,9 +54,26 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
   }
 
   Future<void> _register() async {
-    if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
+    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
+
+    if (_nameController.text.trim().isEmpty || phone.isEmpty) {
       _showSnack('Vui lòng nhập họ tên và SĐT');
       return;
+    }
+
+    final phoneExp = RegExp(r'^(0|\+84)[0-9]{9}$');
+    if (!phoneExp.hasMatch(phone)) {
+      _showSnack('Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0 hoặc +84)');
+      return;
+    }
+
+    if (email.isNotEmpty) {
+      final emailExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+      if (!emailExp.hasMatch(email)) {
+        _showSnack('Email không hợp lệ');
+        return;
+      }
     }
     if (_regPasswordController.text.trim().isEmpty) {
       _showSnack('Vui lòng nhập mật khẩu');

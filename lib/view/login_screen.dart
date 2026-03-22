@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../db/app_database.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'home_screen.dart';
 import 'manager/manager_dashboard_screen.dart';
 import 'customer/customer_login_screen.dart';
@@ -33,13 +35,17 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final manager = await AppDatabase.instance.authenticateManager(email, password);
       if (manager != null) {
-        if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagerDashboardScreen()));
+        if (mounted) {
+          context.read<AuthProvider>().loginAsManager(manager);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagerDashboardScreen()));
+        }
         return;
       }
 
       final user = await AppDatabase.instance.authenticate(email, password);
       if (user != null) {
         if (mounted) {
+          context.read<AuthProvider>().loginAsUser(user);
           if (user.role == 'staff') {
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const BarcodeScreen()));
           } else if (user.role == 'admin') {
@@ -66,7 +72,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final supplier = await AppDatabase.instance.authenticateSupplier(email, password);
       if (supplier != null) {
-        if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SupplierDashboardScreen(supplier: supplier)));
+        if (mounted) {
+          context.read<AuthProvider>().loginAsSupplier(supplier);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SupplierDashboardScreen(supplier: supplier)));
+        }
         return;
       }
 

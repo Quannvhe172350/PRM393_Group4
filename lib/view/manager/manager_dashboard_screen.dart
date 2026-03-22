@@ -12,6 +12,10 @@ import 'employee_management_screen.dart';
 import 'supplier_management_screen.dart';
 import 'reports_screen.dart';
 import '../../view/supplier/supplier_list_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../widgets/edit_profile_dialog.dart';
+import '../widgets/change_password_dialog.dart';
+import '../../db/app_database.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -21,6 +25,72 @@ class ManagerDashboardScreen extends StatefulWidget {
 }
 
 class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
+  void _showProfile(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    if (auth.currentManager != null) {
+      final m = auth.currentManager!;
+      showDialog(
+        context: context,
+        builder: (_) => EditProfileDialog(
+          initialName: m.name,
+          initialPhone: m.phone,
+          initialEmail: m.email,
+          onSave: (name, phone, email, _) async {
+            final updated = m.copyWith(name: name, phone: phone, email: email);
+            await AppDatabase.instance.updateManager(updated);
+            auth.loginAsManager(updated);
+          },
+        ),
+      );
+    } else if (auth.currentUser != null) {
+      final u = auth.currentUser!;
+      showDialog(
+        context: context,
+        builder: (_) => EditProfileDialog(
+          initialName: u.name,
+          initialPhone: u.phone,
+          initialEmail: u.email,
+          onSave: (name, phone, email, _) async {
+            final updated = u.copyWith(name: name, phone: phone, email: email);
+            await AppDatabase.instance.updateUser(updated);
+            auth.loginAsUser(updated);
+          },
+        ),
+      );
+    }
+  }
+
+  void _showChangePassword(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    if (auth.currentManager != null) {
+      final m = auth.currentManager!;
+      showDialog(
+        context: context,
+        builder: (_) => ChangePasswordDialog(
+          onChangePassword: (currentPass, newPass) async {
+            if (m.password != currentPass) return false;
+            await AppDatabase.instance.updateManagerPassword(m.id!, newPass);
+            auth.loginAsManager(m.copyWith(password: newPass));
+            return true;
+          },
+        ),
+      );
+    } else if (auth.currentUser != null) {
+      final u = auth.currentUser!;
+      showDialog(
+        context: context,
+        builder: (_) => ChangePasswordDialog(
+          onChangePassword: (currentPass, newPass) async {
+            if (u.password != currentPass) return false;
+            await AppDatabase.instance.updateUserPassword(u.id!, newPass);
+            auth.loginAsUser(u.copyWith(password: newPass));
+            return true;
+          },
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -46,29 +116,24 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Đăng xuất',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Đăng xuất'),
-                  content: const Text('Bạn có chắc muốn đăng xuất không?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        Navigator.pushReplacementNamed(context, '/');
-                      },
-                      child: const Text('Đăng xuất'),
-                    ),
-                  ],
-                ),
-              );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle),
+            tooltip: 'Tài khoản',
+            onSelected: (value) {
+              if (value == 'profile') {
+                _showProfile(context);
+              } else if (value == 'password') {
+                _showChangePassword(context);
+              } else if (value == 'logout') {
+                context.read<AuthProvider>().logout();
+                Navigator.pushReplacementNamed(context, '/');
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'profile', child: Text('Chỉnh sửa thông tin')),
+              const PopupMenuItem(value: 'password', child: Text('Đổi mật khẩu')),
+              const PopupMenuItem(value: 'logout', child: Text('Đăng xuất')),
+            ],
           ),
         ],
       ),

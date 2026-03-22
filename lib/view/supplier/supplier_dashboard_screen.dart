@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/supplier.dart';
 import '../../models/supplier_product.dart';
 import '../../models/product.dart';
 import '../../models/purchase_order.dart';
+import '../../providers/auth_provider.dart';
+import '../widgets/edit_profile_dialog.dart';
+import '../widgets/change_password_dialog.dart';
 import '../../db/app_database.dart';
 
 class SupplierDashboardScreen extends StatefulWidget {
@@ -18,6 +22,42 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
   List<SupplierProduct> _catalog = [];
   List<PurchaseOrder> _orders = [];
   bool _isLoading = true;
+
+  void _showProfile(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final supplier = auth.currentSupplier ?? widget.supplier;
+    showDialog(
+      context: context,
+      builder: (_) => EditProfileDialog(
+        initialName: supplier.name,
+        initialPhone: supplier.phone ?? '',
+        initialEmail: supplier.email,
+        initialAddress: supplier.address,
+        showAddress: true,
+        onSave: (name, phone, email, address) async {
+          final updated = supplier.copyWith(name: name, phone: phone, email: email, address: address);
+          await AppDatabase.instance.updateSupplier(updated);
+          auth.loginAsSupplier(updated);
+        },
+      ),
+    );
+  }
+
+  void _showChangePassword(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final supplier = auth.currentSupplier ?? widget.supplier;
+    showDialog(
+      context: context,
+      builder: (_) => ChangePasswordDialog(
+        onChangePassword: (currentPass, newPass) async {
+          if (supplier.password != currentPass) return false;
+          await AppDatabase.instance.updateSupplierPassword(supplier.id!, newPass);
+          auth.loginAsSupplier(supplier.copyWith(password: newPass));
+          return true;
+        },
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -54,9 +94,24 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
           backgroundColor: Colors.indigo,
           foregroundColor: Colors.white,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.account_circle),
+              tooltip: 'Tài khoản',
+              onSelected: (value) {
+                if (value == 'profile') {
+                  _showProfile(context);
+                } else if (value == 'password') {
+                  _showChangePassword(context);
+                } else if (value == 'logout') {
+                  context.read<AuthProvider>().logout();
+                  Navigator.pushReplacementNamed(context, '/');
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'profile', child: Text('Chỉnh sửa thông tin')),
+                const PopupMenuItem(value: 'password', child: Text('Đổi mật khẩu')),
+                const PopupMenuItem(value: 'logout', child: Text('Đăng xuất')),
+              ],
             ),
           ],
           bottom: const TabBar(

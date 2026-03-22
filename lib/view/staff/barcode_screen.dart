@@ -2,12 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supermarket_project_prm392_group4/controller/staff/barcode.dart';
 import '../login_screen.dart';
-
+import '../../providers/auth_provider.dart';
+import '../widgets/edit_profile_dialog.dart';
+import '../widgets/change_password_dialog.dart';
+import '../../db/app_database.dart';
 class BarcodeScreen extends StatelessWidget {
   const BarcodeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    void showProfile(BuildContext context) {
+      final auth = context.read<AuthProvider>();
+      final user = auth.currentUser;
+      if (user == null) return;
+      showDialog(
+        context: context,
+        builder: (_) => EditProfileDialog(
+          initialName: user.name,
+          initialPhone: user.phone,
+          initialEmail: user.email,
+          onSave: (name, phone, email, _) async {
+            final updated = user.copyWith(name: name, phone: phone, email: email);
+            await AppDatabase.instance.updateUser(updated);
+            auth.loginAsUser(updated);
+          },
+        ),
+      );
+    }
+
+    void showChangePassword(BuildContext context) {
+      final auth = context.read<AuthProvider>();
+      final user = auth.currentUser;
+      if (user == null) return;
+      showDialog(
+        context: context,
+        builder: (_) => ChangePasswordDialog(
+          onChangePassword: (currentPass, newPass) async {
+            if (user.password != currentPass) return false;
+            await AppDatabase.instance.updateUserPassword(user.id!, newPass);
+            auth.loginAsUser(user.copyWith(password: newPass));
+            return true;
+          },
+        ),
+      );
+    }
+
     return ChangeNotifierProvider(
       create: (_) => BarcodeController(),
       child: Scaffold(
@@ -19,16 +58,28 @@ class BarcodeScreen extends StatelessWidget {
           centerTitle: true,
           elevation: 0,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Đăng xuất',
-              onPressed: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
-                  (route) => false,
-                );
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.account_circle),
+              tooltip: 'Tài khoản',
+              onSelected: (value) {
+                if (value == 'profile') {
+                  showProfile(context);
+                } else if (value == 'password') {
+                  showChangePassword(context);
+                } else if (value == 'logout') {
+                  context.read<AuthProvider>().logout();
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => LoginScreen()),
+                    (route) => false,
+                  );
+                }
               },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'profile', child: Text('Chỉnh sửa thông tin')),
+                const PopupMenuItem(value: 'password', child: Text('Đổi mật khẩu')),
+                const PopupMenuItem(value: 'logout', child: Text('Đăng xuất')),
+              ],
             ),
           ],
         ),

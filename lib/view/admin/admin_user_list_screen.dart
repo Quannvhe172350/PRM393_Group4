@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../widgets/edit_profile_dialog.dart';
+import '../widgets/change_password_dialog.dart';
+
 import '../../db/app_database.dart';
 import '../../models/customer.dart';
 import '../../models/user.dart';
@@ -35,6 +40,42 @@ class _AdminUserListScreenState extends State<AdminUserListScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _showProfile(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
+    if (user == null) return;
+    showDialog(
+      context: context,
+      builder: (_) => EditProfileDialog(
+        initialName: user.name,
+        initialPhone: user.phone,
+        initialEmail: user.email,
+        onSave: (name, phone, email, _) async {
+          final updated = user.copyWith(name: name, phone: phone, email: email);
+          await AppDatabase.instance.updateUser(updated);
+          auth.loginAsUser(updated);
+        },
+      ),
+    );
+  }
+
+  void _showChangePassword(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
+    if (user == null) return;
+    showDialog(
+      context: context,
+      builder: (_) => ChangePasswordDialog(
+        onChangePassword: (currentPass, newPass) async {
+          if (user.password != currentPass) return false;
+          await AppDatabase.instance.updateUserPassword(user.id!, newPass);
+          auth.loginAsUser(user.copyWith(password: newPass));
+          return true;
+        },
+      ),
+    );
   }
 
   void _loadData() {
@@ -78,12 +119,24 @@ class _AdminUserListScreenState extends State<AdminUserListScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Đăng xuất',
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/');
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle),
+            tooltip: 'Tài khoản',
+            onSelected: (value) {
+              if (value == 'profile') {
+                _showProfile(context);
+              } else if (value == 'password') {
+                _showChangePassword(context);
+              } else if (value == 'logout') {
+                context.read<AuthProvider>().logout();
+                Navigator.pushReplacementNamed(context, '/');
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'profile', child: Text('Chỉnh sửa thông tin')),
+              const PopupMenuItem(value: 'password', child: Text('Đổi mật khẩu')),
+              const PopupMenuItem(value: 'logout', child: Text('Đăng xuất')),
+            ],
           ),
         ],
         bottom: TabBar(
