@@ -53,13 +53,16 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Checkout: tạo Order trong DB, cộng loyalty points
-  Future<int> checkout(int customerId) async {
+  /// Checkout: tạo Order trong DB, cộng/trừ loyalty points
+  Future<int> checkout(int customerId, {int pointsUsed = 0}) async {
     if (_items.isEmpty) throw Exception('Giỏ hàng trống');
+
+    final discount = pointsUsed * 100;
+    final finalAmount = (totalAmount - discount) < 0 ? 0.0 : (totalAmount - discount);
 
     final order = Order(
       customerId: customerId,
-      totalAmount: totalAmount,
+      totalAmount: finalAmount,
       status: 'pending',
     );
 
@@ -72,8 +75,12 @@ class CartProvider extends ChangeNotifier {
 
     final orderId = await AppDatabase.instance.createOrder(order, orderItems);
 
-    // Cộng loyalty points (1 điểm / 10.000đ)
-    final points = (totalAmount / 10000).floor();
+    if (pointsUsed > 0) {
+      await AppDatabase.instance.deductCustomerLoyaltyPoints(customerId, pointsUsed);
+    }
+
+    // Cộng loyalty points (1 điểm / 1.000đ) dựa trên số tiền thực trả
+    final points = (finalAmount / 1000).floor();
     if (points > 0) {
       await AppDatabase.instance.updateCustomerLoyaltyPoints(customerId, points);
     }

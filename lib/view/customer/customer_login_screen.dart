@@ -79,6 +79,10 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
       _showSnack('Vui lòng nhập mật khẩu');
       return;
     }
+    if (_regPasswordController.text.trim().length < 6) {
+      _showSnack('Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
     if (_regPasswordController.text != _confirmPasswordController.text) {
       _showSnack('Mật khẩu xác nhận không khớp');
       return;

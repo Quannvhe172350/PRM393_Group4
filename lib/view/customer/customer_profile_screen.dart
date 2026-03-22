@@ -4,6 +4,7 @@ import '../../providers/customer_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../db/app_database.dart';
 import '../widgets/change_password_dialog.dart';
+import '../../utils/hash_helper.dart';
 
 class CustomerProfileScreen extends StatelessWidget {
   const CustomerProfileScreen({super.key});
@@ -73,10 +74,11 @@ class CustomerProfileScreen extends StatelessWidget {
               context: context,
               builder: (ctx) => ChangePasswordDialog(
                 onChangePassword: (currentPass, newPass) async {
-                  if (customer.password != currentPass) return false;
-                  await AppDatabase.instance.updateCustomerPassword(customer.id!, newPass);
+                  if (customer.password != HashHelper.hashPassword(currentPass)) return false;
+                  final hashedNewPass = HashHelper.hashPassword(newPass);
+                  await AppDatabase.instance.updateCustomerPassword(customer.id!, hashedNewPass);
                   // Update customer in provider memory
-                  await customerProv.updateProfile(customer.copyWith(password: newPass));
+                  await customerProv.updateProfile(customer.copyWith(password: hashedNewPass));
                   return true;
                 },
               )

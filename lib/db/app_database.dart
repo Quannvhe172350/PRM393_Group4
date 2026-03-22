@@ -15,6 +15,7 @@ import '../models/purchase_order.dart';
 import '../models/supplier.dart';
 import '../models/supplier_product.dart';
 import '../models/user.dart';
+import '../utils/hash_helper.dart';
 
 class AppDatabase {
   AppDatabase._internal();
@@ -22,7 +23,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
 
   static const _dbName = 'supermarket.db';
-  static const _dbVersion = 9;
+  static const _dbVersion = 10;
 
   static const tableUsers = 'users';
   static const tableCustomers = 'customers';
@@ -158,6 +159,18 @@ class AppDatabase {
         var cols = await db.rawQuery("PRAGMA table_info($tableCustomers)");
         if (cols.every((c) => c['name'] != 'is_banned')) {
           await db.execute("ALTER TABLE $tableCustomers ADD COLUMN is_banned INTEGER NOT NULL DEFAULT 0");
+        }
+      }
+      if (oldVersion < 10) {
+        final customers = await db.query(tableCustomers);
+        final defaultHash = HashHelper.hashPassword('123456');
+        for (final c in customers) {
+          final id = c['id'] as int;
+          final pass = c['password'] as String;
+          if (pass.length < 64) {
+             final updatedPass = pass.isEmpty || pass == '123456' ? defaultHash : HashHelper.hashPassword(pass);
+             await db.update(tableCustomers, {'password': updatedPass}, where: 'id = ?', whereArgs: [id]);
+          }
         }
       }
     } catch (e) {
@@ -412,12 +425,13 @@ class AppDatabase {
     }
 
     // ── Customers ──
+    final hashedCustomerPass = HashHelper.hashPassword('123456');
     final customers = [
-      {'name': 'Pham Van D', 'email': 'pvd@gmail.com', 'phone': '0912345678', 'address': '12 Nguyễn Huệ, Quận 1, TP.HCM', 'loyalty_points': 150, 'membership_date': now, 'created_at': now, 'updated_at': now},
-      {'name': 'Hoang Thi E', 'email': 'hte@gmail.com', 'phone': '0987654321', 'address': '45 Lê Lợi, Quận 3, TP.HCM', 'loyalty_points': 80, 'membership_date': now, 'created_at': now, 'updated_at': now},
-      {'name': 'Vo Minh F', 'email': 'vmf@gmail.com', 'phone': '0901122334', 'address': '78 Trần Hưng Đạo, Quận 5, TP.HCM', 'loyalty_points': 0, 'membership_date': now, 'created_at': now, 'updated_at': now},
-      {'name': 'Dang Thi G', 'email': 'dtg@gmail.com', 'phone': '0909988776', 'address': '100 Điện Biên Phủ, Bình Thạnh, TP.HCM', 'loyalty_points': 320, 'membership_date': now, 'created_at': now, 'updated_at': now},
-      {'name': 'Bui Van H', 'phone': '0933445566', 'loyalty_points': 50, 'membership_date': now, 'created_at': now, 'updated_at': now},
+      {'password': hashedCustomerPass, 'name': 'Pham Van D', 'email': 'pvd@gmail.com', 'phone': '0912345678', 'address': '12 Nguyễn Huệ, Quận 1, TP.HCM', 'loyalty_points': 150, 'membership_date': now, 'created_at': now, 'updated_at': now},
+      {'password': hashedCustomerPass, 'name': 'Hoang Thi E', 'email': 'hte@gmail.com', 'phone': '0987654321', 'address': '45 Lê Lợi, Quận 3, TP.HCM', 'loyalty_points': 80, 'membership_date': now, 'created_at': now, 'updated_at': now},
+      {'password': hashedCustomerPass, 'name': 'Vo Minh F', 'email': 'vmf@gmail.com', 'phone': '0901122334', 'address': '78 Trần Hưng Đạo, Quận 5, TP.HCM', 'loyalty_points': 0, 'membership_date': now, 'created_at': now, 'updated_at': now},
+      {'password': hashedCustomerPass, 'name': 'Dang Thi G', 'email': 'dtg@gmail.com', 'phone': '0909988776', 'address': '100 Điện Biên Phủ, Bình Thạnh, TP.HCM', 'loyalty_points': 320, 'membership_date': now, 'created_at': now, 'updated_at': now},
+      {'password': hashedCustomerPass, 'name': 'Bui Van H', 'phone': '0933445566', 'loyalty_points': 50, 'membership_date': now, 'created_at': now, 'updated_at': now},
     ];
     for (final c in customers) {
       await db.insert(tableCustomers, c);
@@ -692,6 +706,16 @@ class AppDatabase {
     return db.rawUpdate('''
       UPDATE $tableCustomers
       SET loyalty_points = loyalty_points + ?, updated_at = ?
+      WHERE id = ?
+    ''', [points, DateTime.now().toIso8601String(), customerId]);
+  }
+
+  Future<int> deductCustomerLoyaltyPoints(int customerId, int points) async {
+    if (points <= 0) return 0;
+    final db = await database;
+    return db.rawUpdate('''
+      UPDATE $tableCustomers
+      SET loyalty_points = loyalty_points - ?, updated_at = ?
       WHERE id = ?
     ''', [points, DateTime.now().toIso8601String(), customerId]);
   }

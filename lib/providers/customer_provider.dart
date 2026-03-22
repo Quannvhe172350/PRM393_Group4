@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../db/app_database.dart';
 import '../models/customer.dart';
 import '../models/order.dart';
+import '../utils/hash_helper.dart';
 
 /// Provider quản lý phiên đăng nhập và dữ liệu Customer
 class CustomerProvider extends ChangeNotifier {
@@ -20,7 +21,8 @@ class CustomerProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final customer = await AppDatabase.instance.authenticateCustomer(phone, password);
+      final hashedPassword = HashHelper.hashPassword(password);
+      final customer = await AppDatabase.instance.authenticateCustomer(phone, hashedPassword);
       if (customer != null) {
         _currentCustomer = customer;
         await loadOrders();
@@ -48,9 +50,14 @@ class CustomerProvider extends ChangeNotifier {
       final existing = await AppDatabase.instance.getCustomerByPhone(customer.phone);
       if (existing != null) return false;
 
-      await AppDatabase.instance.insertCustomer(customer);
+      await AppDatabase.instance.insertCustomer(customer.copyWith(
+        password: HashHelper.hashPassword(customer.password)
+      ));
       // Đăng nhập ngay sau khi đăng ký
-      final created = await AppDatabase.instance.authenticateCustomer(customer.phone, customer.password);
+      final created = await AppDatabase.instance.authenticateCustomer(
+        customer.phone, 
+        HashHelper.hashPassword(customer.password)
+      );
       if (created != null) {
         _currentCustomer = created;
         notifyListeners();
