@@ -22,7 +22,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
 
   static const _dbName = 'supermarket.db';
-  static const _dbVersion = 6;
+  static const _dbVersion = 9;
 
   static const tableUsers = 'users';
   static const tableCustomers = 'customers';
@@ -130,13 +130,43 @@ class AppDatabase {
           });
         }
       }
+      if (oldVersion < 7) {
+        var cols = await db.rawQuery("PRAGMA table_info($tableUsers)");
+        if (cols.every((c) => c['name'] != 'is_banned')) {
+          await db.execute("ALTER TABLE $tableUsers ADD COLUMN is_banned INTEGER NOT NULL DEFAULT 0");
+        }
+        // Thêm tài khoản Manager mẫu (nếu chưa có)
+        final existing = await db.query(tableUsers, where: 'email = ?', whereArgs: ['manager@supermarket.com']);
+        if (existing.isEmpty) {
+          final now = DateTime.now().toIso8601String();
+          await db.insert(tableUsers, {
+            'name': 'Manager Demo',
+            'email': 'manager@supermarket.com',
+            'phone': '0900000022',
+            'password': '123456',
+            'role': 'manager',
+            'is_banned': 0,
+            'created_at': now,
+            'updated_at': now,
+          });
+        }
+      }
+      if (oldVersion < 8) {
+        await _ensureSampleAccounts(db);
+      }
+      if (oldVersion < 9) {
+        var cols = await db.rawQuery("PRAGMA table_info($tableCustomers)");
+        if (cols.every((c) => c['name'] != 'is_banned')) {
+          await db.execute("ALTER TABLE $tableCustomers ADD COLUMN is_banned INTEGER NOT NULL DEFAULT 0");
+        }
+      }
     } catch (e) {
       print("Lỗi nâng cấp Database: $e");
     }
   }
 
   FutureOr<void> _onCreate(Database db, int version) async {
-    // ── Users (admin / general staff) ──
+    // ── Users (admin / manager / staff) ──
     await db.execute('''
       CREATE TABLE $tableUsers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -145,6 +175,7 @@ class AppDatabase {
         phone TEXT NOT NULL,
         password TEXT NOT NULL DEFAULT '',
         role TEXT NOT NULL DEFAULT 'staff',
+        is_banned INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -160,6 +191,7 @@ class AppDatabase {
         password TEXT NOT NULL DEFAULT '',
         address TEXT,
         loyalty_points INTEGER NOT NULL DEFAULT 0,
+        is_banned INTEGER NOT NULL DEFAULT 0,
         membership_date TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -325,19 +357,57 @@ class AppDatabase {
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  //  TÀI KHOẢN MẪU (chỉ thêm nếu chưa tồn tại)
+  // ═══════════════════════════════════════════════════════════════════
+
+  static Future<void> _ensureSampleAccounts(Database db) async {
+    final now = DateTime.now().toIso8601String();
+
+    // Users: admin, manager, staff
+    final userAccounts = [
+      {'name': 'Admin', 'email': 'admin@supermarket.com', 'phone': '0900000000', 'password': '123456', 'role': 'admin', 'is_banned': 0, 'created_at': now, 'updated_at': now},
+      {'name': 'Manager Demo', 'email': 'manager@supermarket.com', 'phone': '0900000022', 'password': '123456', 'role': 'manager', 'is_banned': 0, 'created_at': now, 'updated_at': now},
+      {'name': 'Nhân viên Demo', 'email': 'staff@supermarket.com', 'phone': '0900000011', 'password': '123456', 'role': 'staff', 'is_banned': 0, 'created_at': now, 'updated_at': now},
+    ];
+    for (final u in userAccounts) {
+      final exists = await db.query(tableUsers, where: 'email = ?', whereArgs: [u['email']]);
+      if (exists.isEmpty) await db.insert(tableUsers, u);
+    }
+
+    // Managers (bảng riêng): b@supermarket.com
+    final mgrExists = await db.query(tableManagers, where: 'email = ?', whereArgs: ['b@supermarket.com']);
+    if (mgrExists.isEmpty) {
+      await db.insert(tableManagers, {
+        'name': 'Tran Thi B', 'email': 'b@supermarket.com', 'phone': '0900000002', 'password': '123456',
+        'department': 'Quản lý chung', 'salary': 20000000.0, 'hire_date': '2023-01-15', 'created_at': now, 'updated_at': now,
+      });
+    }
+
+    // Suppliers: supplier@supermarket.com
+    final supExists = await db.query(tableSuppliers, where: 'email = ?', whereArgs: ['supplier@supermarket.com']);
+    if (supExists.isEmpty) {
+      await db.insert(tableSuppliers, {
+        'name': 'Supplier Demo', 'email': 'supplier@supermarket.com', 'phone': '0901112223',
+        'address': '123 QL1A, Thủ Đức, TP.HCM', 'password': '123456', 'created_at': now,
+      });
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   //  SEED DATA
   // ═══════════════════════════════════════════════════════════════════
 
   Future<void> _seedData(Database db) async {
     final now = DateTime.now().toIso8601String();
 
-    // ── Users ──
-    final users = [
-      {'name': 'Admin', 'email': 'admin@supermarket.com', 'phone': '0900000000', 'password': '123456', 'role': 'admin', 'created_at': now, 'updated_at': now},
-      {'name': 'Nguyen Van A', 'email': 'a@example.com', 'phone': '0900000001', 'password': '123456', 'role': 'staff', 'created_at': now, 'updated_at': now},
-      {'name': 'Nhân viên Demo', 'email': 'staff@supermarket.com', 'phone': '0900000011', 'password': '123456', 'role': 'staff', 'created_at': now, 'updated_at': now},
+    // ── Users (tài khoản mẫu: Admin, Manager, Staff) ──
+    final userAccounts = [
+      {'name': 'Admin', 'email': 'admin@supermarket.com', 'phone': '0900000000', 'password': '123456', 'role': 'admin', 'is_banned': 0, 'created_at': now, 'updated_at': now},
+      {'name': 'Manager Demo', 'email': 'manager@supermarket.com', 'phone': '0900000022', 'password': '123456', 'role': 'manager', 'is_banned': 0, 'created_at': now, 'updated_at': now},
+      {'name': 'Nhân viên Demo', 'email': 'staff@supermarket.com', 'phone': '0900000011', 'password': '123456', 'role': 'staff', 'is_banned': 0, 'created_at': now, 'updated_at': now},
+      {'name': 'Nguyen Van A', 'email': 'a@example.com', 'phone': '0900000001', 'password': '123456', 'role': 'staff', 'is_banned': 0, 'created_at': now, 'updated_at': now},
     ];
-    for (final u in users) {
+    for (final u in userAccounts) {
       await db.insert(tableUsers, u);
     }
 
@@ -502,7 +572,9 @@ class AppDatabase {
       limit: 1,
     );
     if (maps.isEmpty) return null;
-    return User.fromMap(maps.first);
+    final user = User.fromMap(maps.first);
+    if (user.isBanned) return null;
+    return user;
   }
 
   Future<int> insertUser(User user) async {
@@ -523,6 +595,36 @@ class AppDatabase {
     return db.delete(tableUsers, where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<int> banUser(int id) async {
+    final db = await database;
+    return db.update(
+      tableUsers,
+      {'is_banned': 1, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> unbanUser(int id) async {
+    final db = await database;
+    return db.update(
+      tableUsers,
+      {'is_banned': 0, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateUserRole(int id, String role) async {
+    final db = await database;
+    return db.update(
+      tableUsers,
+      {'role': role, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // ═══════════════════════════════════════════════════════════════════
   //  CUSTOMER CRUD
   // ═══════════════════════════════════════════════════════════════════
@@ -536,7 +638,9 @@ class AppDatabase {
       limit: 1,
     );
     if (maps.isEmpty) return null;
-    return Customer.fromMap(maps.first);
+    final customer = Customer.fromMap(maps.first);
+    if (customer.isBanned) return null;
+    return customer;
   }
 
   Future<List<Customer>> getCustomers() async {
@@ -595,6 +699,26 @@ class AppDatabase {
   Future<int> deleteCustomer(int id) async {
     final db = await database;
     return db.delete(tableCustomers, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> banCustomer(int id) async {
+    final db = await database;
+    return db.update(
+      tableCustomers,
+      {'is_banned': 1, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> unbanCustomer(int id) async {
+    final db = await database;
+    return db.update(
+      tableCustomers,
+      {'is_banned': 0, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════

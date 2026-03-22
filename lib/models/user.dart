@@ -4,7 +4,8 @@ class User {
   final String email;
   final String phone;
   final String password;
-  final String role;
+  final String role; // admin | manager | staff
+  final bool isBanned;
   final String? createdAt;
   final String? updatedAt;
 
@@ -15,6 +16,7 @@ class User {
     required this.phone,
     this.password = '',
     this.role = 'staff',
+    this.isBanned = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -27,6 +29,7 @@ class User {
       phone: map['phone'] as String? ?? '',
       password: map['password'] as String? ?? '',
       role: map['role'] as String? ?? 'staff',
+      isBanned: (map['is_banned'] as int?) == 1,
       createdAt: map['created_at'] as String?,
       updatedAt: map['updated_at'] as String?,
     );
@@ -40,6 +43,7 @@ class User {
       'phone': phone,
       'password': password,
       'role': role,
+      'is_banned': isBanned ? 1 : 0,
       'created_at': createdAt ?? DateTime.now().toIso8601String(),
       'updated_at': updatedAt ?? DateTime.now().toIso8601String(),
     };
@@ -52,6 +56,7 @@ class User {
     String? phone,
     String? password,
     String? role,
+    bool? isBanned,
     String? createdAt,
     String? updatedAt,
   }) {
@@ -62,8 +67,22 @@ class User {
       phone: phone ?? this.phone,
       password: password ?? this.password,
       role: role ?? this.role,
+      isBanned: isBanned ?? this.isBanned,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  String get roleDisplay {
+    switch (role) {
+      case 'admin':
+        return 'Admin';
+      case 'manager':
+        return 'Quản lý';
+      case 'staff':
+        return 'Nhân viên';
+      default:
+        return role;
+    }
   }
 }

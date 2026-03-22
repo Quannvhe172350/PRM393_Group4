@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../db/app_database.dart';
 import 'home_screen.dart';
 import 'manager/manager_dashboard_screen.dart';
-import 'manager/employee_management_screen.dart';
 import 'customer/customer_login_screen.dart';
 import 'staff/barcode_screen.dart';
 import 'supplier/supplier_dashboard_screen.dart';
+import 'admin/admin_user_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -43,10 +43,23 @@ class _LoginScreenState extends State<LoginScreen> {
           if (user.role == 'staff') {
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const BarcodeScreen()));
           } else if (user.role == 'admin') {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const EmployeeManagementScreen(isAdmin: true)));
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminUserListScreen()));
+          } else if (user.role == 'manager') {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagerDashboardScreen()));
           } else {
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
           }
+        }
+        return;
+      }
+
+      // Kiểm tra tài khoản bị khóa
+      final existingUser = await AppDatabase.instance.getUserByEmail(email);
+      if (existingUser != null && existingUser.isBanned) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tài khoản đã bị khóa. Liên hệ Admin.'), backgroundColor: Colors.red),
+          );
         }
         return;
       }
@@ -112,18 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                           : const Text("ĐĂNG NHẬP", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     )),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                      child: const Column(children: [
-                        Text('Tài khoản mẫu:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                        Text('Manager: b@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        Text('Admin: admin@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        Text('Staff: staff@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        Text('Supplier: supplier@supermarket.com / 123456', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                      ]),
-                    ),
                   ]),
                 ),
 

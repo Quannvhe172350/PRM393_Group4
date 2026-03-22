@@ -20,4 +20,10 @@ class UserDatabase {
   Future<int> updateUser(User user) => _db.updateUser(user);
 
   Future<int> deleteUser(int id) => _db.deleteUser(id);
+
+  Future<int> banUser(int id) => _db.banUser(id);
+
+  Future<int> unbanUser(int id) => _db.unbanUser(id);
+
+  Future<int> updateUserRole(int id, String role) => _db.updateUserRole(id, role);
 }
