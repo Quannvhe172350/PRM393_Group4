@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supermarket_project_prm392_group4/view/staff/print_receipt_screen.dart';
 import '../../db/app_database.dart';
 import '../../models/product.dart';
+import '../../models/order.dart';
+import '../../models/order_item.dart';
 
 class BarcodeController extends ChangeNotifier {
   // Giỏ hàng lưu trữ Sản phẩm và Số lượng
@@ -182,16 +184,34 @@ class BarcodeController extends ChangeNotifier {
         );
       }
 
+      // 3. Tạo Đơn hàng và lưu vào Database để Manager có thể xem
+      final newOrder = Order(
+        totalAmount: finalizedTotal,
+        status: 'completed',
+        orderDate: DateTime.now().toIso8601String(),
+      );
+
+      final orderItems = finalizedCart.entries.map((entry) {
+        return OrderItem(
+          productId: int.parse(entry.key.id.toString()),
+          quantity: entry.value,
+          unitPrice: entry.key.price,
+          subtotal: entry.key.price * entry.value,
+        );
+      }).toList();
+
+      await _db.createOrder(newOrder, orderItems);
+
       if (context.mounted) {
-        // 3. Thông báo thành công
+        // 4. Thông báo thành công
         _showSnackBar(context, "Thanh toán thành công!", Colors.green);
 
-        // 4. RESET DỮ LIỆU NGAY (Để màn hình chính trống)
+        // 5. RESET DỮ LIỆU NGAY (Để màn hình chính trống)
         cart.clear();
         barcodeController.clear();
         notifyListeners();
 
-        // 5. CHUYỂN SANG MÀN HÌNH HÓA ĐƠN
+        // 6. CHUYỂN SANG MÀN HÌNH HÓA ĐƠN
         Navigator.push(
           context,
           MaterialPageRoute(

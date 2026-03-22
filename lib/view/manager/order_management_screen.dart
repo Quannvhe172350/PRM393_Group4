@@ -93,12 +93,13 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
   Widget _buildFilterChip(String label, String status) {
     final isSelected = _selectedStatus == status;
     return FilterChip(
-      label: Text(label, style: TextStyle(color: isSelected ? Colors.blue : Colors.white, fontSize: 12)),
+      label: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.blue, fontSize: 12)),
       selected: isSelected,
       onSelected: (selected) => setState(() => _selectedStatus = status),
-      backgroundColor: Colors.white.withValues(alpha: 0.2),
-      selectedColor: Colors.white,
-      checkmarkColor: Colors.blue,
+      backgroundColor: Colors.white,
+      selectedColor: Colors.blue.shade700,
+      checkmarkColor: Colors.white,
+      side: const BorderSide(color: Colors.white),
     );
   }
 

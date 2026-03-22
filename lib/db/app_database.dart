@@ -472,7 +472,7 @@ class AppDatabase {
     final products = [
       {'name': 'Gạo ST25', 'description': 'Gạo ST25 loại 5kg', 'price': 120000.0, 'quantity': 50, 'category_id': 1, 'barcode': '8934563001001', 'created_at': now, 'updated_at': now},
       {'name': 'Mì Hảo Hảo', 'description': 'Mì tôm chua cay', 'price': 4000.0, 'quantity': 200, 'category_id': 1, 'barcode': '8934563001002', 'created_at': now, 'updated_at': now},
-      {'name': 'Coca Cola 330ml', 'description': 'Lon Coca Cola 330ml', 'price': 10000.0, 'quantity': 150, 'category_id': 2, 'barcode': '8934563001003', 'created_at': now, 'updated_at': now},
+      {'name': 'Coca Cola 330ml', 'description': 'Lon Coca Cola 330ml', 'price': 10000.0, 'quantity': 150, 'category_id': 2, 'barcode': '8934563001001', 'created_at': now, 'updated_at': now},
       {'name': 'Sữa Vinamilk 1L', 'description': 'Sữa tươi tiệt trùng 1 lít', 'price': 32000.0, 'quantity': 80, 'category_id': 2, 'barcode': '8934563001004', 'created_at': now, 'updated_at': now},
       {'name': 'Nước rửa chén Sunlight', 'description': 'Nước rửa chén Sunlight 750ml', 'price': 28000.0, 'quantity': 60, 'category_id': 3, 'barcode': '8934563001005', 'created_at': now, 'updated_at': now},
       {'name': 'Bánh Oreo', 'description': 'Bánh quy Oreo socola', 'price': 18000.0, 'quantity': 100, 'category_id': 4, 'barcode': '8934563001006', 'created_at': now, 'updated_at': now},
